@@ -2,6 +2,7 @@ __author__ = 'libochen'
 
 
 from google.appengine.ext import ndb
+from google.appengine.api import images
 from google.appengine.ext import blobstore
 
 
@@ -22,6 +23,7 @@ class Stream(ndb.Model):
     subscribers = ndb.StringProperty(repeated=True)
     tags = ndb.StringProperty(repeated=True)
     blob_key = ndb.BlobKeyProperty(repeated=True)
+    view_queue = ndb.DateTimeProperty(repeated=True)
 
     @classmethod
     def query_stream(cls, ancestor_key):
@@ -35,6 +37,17 @@ class StreamInfo(ndb.Model):
     @classmethod
     def query_stream(cls, ancestor_key):
         return cls.query(ancestor=ancestor_key)
+
+
+class TrendingStream:
+    def __init__(self, blob_key, views, stream_id):
+        if blob_key:
+            self.url = images.get_serving_url(blob_key)
+        else:
+            self.url = ""
+        self.views = views
+        self.stream_id = stream_id
+
 
 '''
 class User(ndb.Model):

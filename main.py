@@ -19,16 +19,18 @@ import os
 import webapp2
 import json
 import urllib
-from data_class import Stream, StreamInfo
+from data_class import Stream, StreamInfo, TrendingStream
 from datetime import datetime
 from google.appengine.api import users
 from google.appengine.api import images
+from google.appengine.api import mail
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 import jinja2
 from collections import OrderedDict
+
 
 
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -114,10 +116,15 @@ class ManageHandler(webapp2.RequestHandler):
                 }
         form_data = json.dumps(form)
         if self.request.get('delete'):
-#           result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/delete_a_stream',
-#                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/delete_a_stream',
-                                    method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+            result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/delete_a_stream',
+                               method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+            # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/delete_a_stream',
+            #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+        if self.request.get('unsubscribe'):
+            result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
+                               method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+            # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
+            #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
 
         self.redirect('/manage')
 
@@ -135,7 +142,13 @@ class CreateHandler(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
     def post(self):
-        print self.request.get('user_id'), "ewgiowheguhwegiuhegwh"
+        user = users.get_current_user()
+        if self.request.get("subscribers"):
+            mail.send_mail(sender=str(user)+"<"+str(user)+"@gmail.com>",
+                           to="<"+self.request.get("subscribers")+">",
+                           subject="Please subscribe my stream",
+                           body=self.request.get("message"))
+
         form = {'stream_id': self.request.get('stream_id'),
                 'user_id': str(users.get_current_user()),
 #               'tags': self.request.get('tags'),
@@ -147,10 +160,10 @@ class CreateHandler(webapp2.RequestHandler):
                 }
 
         form_data = json.dumps(form)
-#        result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/create_a_new_stream',
-#                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-        result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/create_a_new_stream',
+        result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/create_a_new_stream',
                                 method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+        # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/create_a_new_stream',
+        #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         self.redirect('/manage')
 
 
@@ -167,11 +180,21 @@ class ViewSingleHandler(webapp2.RequestHandler):
         user_streams = Stream.query(Stream.stream_id == stream_id).fetch()
         blob_key_list = []
         image_url = [""] * 3
-        for stream in user_streams:
-            owner = stream.owner
-            print 'stream id is', stream.stream_id
-            if stream.stream_id == stream_id:
-                blob_key_list = stream.blob_key
+
+        # for stream in user_streams:
+        #     owner = stream.owner
+        #     print 'stream id is', stream.stream_id
+        #     if stream.stream_id == stream_id:
+        #         blob_key_list = stream.blob_key
+
+        stream = user_streams[0]
+        owner = stream.owner
+        print 'stream id is', stream.stream_id
+        if owner != str(user):
+            stream.views += 1
+            stream.view_queue.append(datetime.now())
+            stream.put()
+        blob_key_list = stream.blob_key     #get blob_key_list should be after stream.put()
 
         counter = 0
         has_image = True
@@ -216,10 +239,10 @@ class ViewSingleHandler(webapp2.RequestHandler):
                 }
         form_data = json.dumps(form)
         if self.request.get('Subscribe') == 'Subscribe':
-#           result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/subscribe_a_stream',
-#                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/subscribe_a_stream',
-                                    method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+          result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/subscribe_a_stream',
+                               method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+          #   result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/subscribe_a_stream',
+          #                           method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         elif self.request.get('Subscribe') == 'Unsubscribe':
             # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
             #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
@@ -264,15 +287,41 @@ class SearchHandler(webapp2.RequestHandler):
 
 class TrendingHandler(webapp2.RequestHandler):
     def get(self):
+        first_three = []
+        all_streams = Stream.query(Stream.stream_id != '').fetch()
+        mycmp = lambda x, y: (len(y.view_queue) - len(x.view_queue))
+        all_streams.sort(mycmp)
+        size = 3 if (len(all_streams) - 3) > 0 else len(all_streams)
+        for i in range(size):
+            stream = all_streams[i];
+            views = len(stream.view_queue)
+            stream_id = stream.stream_id
+            blob_key_list = stream.blob_key
+            # if len(blob_key_list) > 0:
+            #     url = images.get_serving_url(blob_key_list[0])
+            #     print url
+            # else:
+            #     url = ''
+
+            trending_stream = TrendingStream(blob_key=(blob_key_list[0] if len(blob_key_list) > 0 else ""),
+                                             views=views,
+                                             stream_id=stream_id)
+            first_three.append(trending_stream)
+        print "end for loop"
+
         template_values = {
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
             'user_id': self.request.get('user_id'),
+            'streams': first_three,
+            'checked': [1, 2, 3, 4],
         }
 
         template = JINJA_ENVIRONMENT.get_template('trending.html')
         self.response.write(template.render(template_values))
 
+    def post(self):
+        print "hellp"
 
 class ErrorHandler(webapp2.RequestHandler):
     def get(self):

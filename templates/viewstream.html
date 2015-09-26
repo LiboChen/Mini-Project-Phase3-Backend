@@ -25,7 +25,7 @@
 <input type="hidden" name="user" value="{{ user }}">
 </form>
 
-{% if owner != user %}
+{% if owner == user %}
     <form action="{{ upload_url }}" method="post" enctype="multipart/form-data">
     <h3>Add an Image</h3>
     <table class="table table-striped">
@@ -42,7 +42,7 @@
 {% else %}
     <form action="/view_single?stream_id={{ stream_id }}" method="post">
     <input type="submit" name="Subscribe" value="Subscribe">
-    </form>>
+    </form>
 {% endif %}
 
 </body>
