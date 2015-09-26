@@ -156,19 +156,15 @@ class CreateHandler(webapp2.RequestHandler):
 
 class ViewSingleHandler(webapp2.RequestHandler):
     def get(self):
+        user = users.get_current_user()
         stream_id = self.request.get('stream_id')
         print 'stream id is', stream_id
         info = {'stream_id': self.request.get('stream_id')}
         info = urllib.urlencode(info)
         upload_url = blobstore.create_upload_url('/upload_image?'+info)
 
-
 #       we should use the actual user
         user_streams = Stream.query(Stream.stream_id == stream_id).fetch()
-
-#        ancestor_key = ndb.Key('User', str(user))
-#        user_streams = Stream.query_stream(ancestor_key).fetch()
-
         blob_key_list = []
         image_url = [""] * 3
         for stream in user_streams:
@@ -187,6 +183,15 @@ class ViewSingleHandler(webapp2.RequestHandler):
                     break;
 
         #calculate hasSub
+        qry = StreamInfo.query_stream(ndb.Key('User', str(user))).fetch()
+        has_sub = False
+        if len(qry) == 0:
+            has_sub = False
+        else:
+            for key in qry[0].subscribed:
+                if key.get().stream_id == stream_id:
+                    has_sub = True
+                    break
 
         template_values = {
             'nav_links': USER_NAV_LINKS,
@@ -196,7 +201,7 @@ class ViewSingleHandler(webapp2.RequestHandler):
             'upload_url': upload_url,
             'image_url': image_url,
             'has_image': has_image,
-            'hasSub': False,
+            'hasSub': has_sub,
             'stream_id': stream_id,
         }
 
@@ -211,18 +216,16 @@ class ViewSingleHandler(webapp2.RequestHandler):
                 }
         form_data = json.dumps(form)
         if self.request.get('Subscribe') == 'Subscribe':
-            print "i am subscribing", form['stream_id']
 #           result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/subscribe_a_stream',
 #                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
             result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/subscribe_a_stream',
                                     method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         elif self.request.get('Subscribe') == 'Unsubscribe':
-            print "i am unsubscribing"
             # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
             #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
             result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
                                     method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-
+        self.redirect('/manage')
 
 
 class ViewAllHandler(webapp2.RequestHandler):
@@ -342,15 +345,24 @@ class SubscribeStreamHandler(webapp2.RequestHandler):
         print 'finished'
         self.redirect('/manage')
 
+
 class UnsubscribeStreamHandler(webapp2.RequestHandler):
     def post(self):
+        print 'in unsubscribe handler'
         data = json.loads(self.request.body)
         user = data['user']
-        print user, ' is deleting', data['stream_id']
-        #remove the stream itself
-        qry = Stream.query(Stream.stream_id == data['stream_id']).fetch()
-        if len(qry) > 0:
-            qry[0].key.delete()
+        stream_id = data['stream_id']
+        print user, 'doing', stream_id
+        ancestor_key = ndb.Key('User', user)
+        stream_info = StreamInfo.query_stream(ancestor_key).fetch()
+        print stream_info[0].subscribed
+        for key in stream_info[0].subscribed:
+            print key.get().stream_id, stream_id
+            if key.get().stream_id == stream_id:
+                stream_info[0].subscribed.remove(key)
+                stream_info[0].put()       #remember to put it back in ndbstore
+                break
+
         self.redirect('/manage')
 
 
@@ -398,6 +410,6 @@ app = webapp2.WSGIApplication([
     ('/delete_a_stream', DeleteStreamHandler),
     ('/upload_image', UploadImageHandler),
     ('/subscribe_a_stream', SubscribeStreamHandler),
-    ('/unsubscribe_a_stream', SubscribeStreamHandler),
+    ('/unsubscribe_a_stream', UnsubscribeStreamHandler),
 ], debug=True)
 
