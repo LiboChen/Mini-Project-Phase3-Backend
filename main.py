@@ -19,7 +19,7 @@ import os
 import webapp2
 import json
 import urllib
-from data_class import Stream, Image
+from data_class import Stream, StreamInfo
 from datetime import datetime
 from google.appengine.api import users
 from google.appengine.api import images
@@ -80,25 +80,29 @@ class LoginHandler(webapp2.RequestHandler):
 class ManageHandler(webapp2.RequestHandler):
     def get(self):
         user = users.get_current_user()
-        print user
-#        ancestor_key = ndb.Key('User', str(user))
+        print 'user is ', user
+        subscribed_streams = []
+        qry = StreamInfo.query_stream(ndb.Key('User', str(user))).fetch()
+        if len(qry) > 0:
+            for key in qry[0].subscribed:
+                subscribed_streams.append(key.get())
+
+        print subscribed_streams
         template_values = {
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
             'user_id': users.get_current_user(),
-#            'user_streams': Stream.query_stream(ancestor_key).fetch(),
             'user_streams': Stream.query(Stream.owner == str(user)).fetch(),
-#            'subscribed_streams': Stream.query_stream(ancestor_key).fetch(),
-            'subscribed_streams': Stream.query(Stream.owner == str(user)).fetch(),
+            'subscribed_streams': subscribed_streams,
             'usr': user,
         }
 
-        all_streams = Stream.query(Stream.stream_id != '')
-        for s in all_streams:
-            print s.stream_id
-
-        print 'length of user_stream', len(template_values['user_streams'])
-        print 'length of subscribed streams', len(template_values['subscribed_streams'])
+        # all_streams = Stream.query(Stream.stream_id != '').fetch()
+        # for s in all_streams:
+        #     print s.stream_id
+        #
+        # print 'length of user_stream', len(template_values['user_streams'])
+        # print 'length of subscribed streams', len(template_values['subscribed_streams'])
 
         template = JINJA_ENVIRONMENT.get_template('manage.html')
         self.response.write(template.render(template_values))
@@ -110,7 +114,7 @@ class ManageHandler(webapp2.RequestHandler):
                 }
         form_data = json.dumps(form)
         if self.request.get('delete'):
-#            result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/create_a_new_stream',
+#           result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/delete_a_stream',
 #                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
             result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/delete_a_stream',
                                     method=urlfetch.POST, headers={'Content-Type': 'application/json'})
@@ -182,21 +186,43 @@ class ViewSingleHandler(webapp2.RequestHandler):
                 if counter == 3:
                     break;
 
+        #calculate hasSub
+
         template_values = {
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
             'owner': owner,         #the owner of the stream
-            'user': users.get_current_user(),   #current user
+            'user': str(users.get_current_user()),   #current user
             'upload_url': upload_url,
             'image_url': image_url,
             'has_image': has_image,
+            'hasSub': False,
+            'stream_id': stream_id,
         }
 
+        print "owner is ", template_values['owner']
+        print "user is ", template_values['user']
         template = JINJA_ENVIRONMENT.get_template('viewstream.html')
         self.response.write(template.render(template_values))
 
     def post(self):
-        print "hellp"
+        form = {'stream_id': str(self.request.get('stream_id')),
+                'user': str(users.get_current_user()),
+                }
+        form_data = json.dumps(form)
+        if self.request.get('Subscribe') == 'Subscribe':
+            print "i am subscribing", form['stream_id']
+#           result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/subscribe_a_stream',
+#                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/subscribe_a_stream',
+                                    method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+        elif self.request.get('Subscribe') == 'Unsubscribe':
+            print "i am unsubscribing"
+            # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
+            #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
+                                    method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+
 
 
 class ViewAllHandler(webapp2.RequestHandler):
@@ -264,7 +290,6 @@ class CreateANewStreamHandler(webapp2.RequestHandler):
         data = json.loads(self.request.body)
         user = data['user_id']
         print user, ' is creating'
-        print 'jajiegjioajegiojegoija', data['owner']
         new_stream = Stream(parent=ndb.Key('User', user),
                             stream_id=data['stream_id'],
                             user_id=data['user_id'],
@@ -282,6 +307,42 @@ class CreateANewStreamHandler(webapp2.RequestHandler):
 
 
 class DeleteStreamHandler(webapp2.RequestHandler):
+    def post(self):
+        data = json.loads(self.request.body)
+        user = data['user']
+        print user, ' is deleting', data['stream_id']
+        #remove the stream itself
+        qry = Stream.query(Stream.stream_id == data['stream_id']).fetch()
+        if len(qry) > 0:
+            qry[0].key.delete()
+        self.redirect('/manage')
+
+
+class SubscribeStreamHandler(webapp2.RequestHandler):
+    def post(self):
+        data = json.loads(self.request.body)
+        user = data['user']
+        stream_id = data['stream_id']
+        print stream_id, 'hello'
+        qry = Stream.query(Stream.stream_id == stream_id).fetch()
+        print 'lenght of qry is ', len(qry)
+
+        ancestor_key = ndb.Key('User', user)
+        stream_info = StreamInfo.query_stream(ancestor_key).fetch()
+        if len(stream_info) == 0:
+            print 'create a new stream_info'
+            new_stream_info = StreamInfo(parent=ndb.Key('User', user))
+            new_stream_info.subscribed.insert(0, qry[0].key)
+            new_stream_info.put()
+        else:
+            new_stream_info = stream_info[0]
+            new_stream_info.subscribed.insert(0, qry[0].key)
+            new_stream_info.put()
+
+        print 'finished'
+        self.redirect('/manage')
+
+class UnsubscribeStreamHandler(webapp2.RequestHandler):
     def post(self):
         data = json.loads(self.request.body)
         user = data['user']
@@ -336,5 +397,7 @@ app = webapp2.WSGIApplication([
     ('/create_a_new_stream', CreateANewStreamHandler),
     ('/delete_a_stream', DeleteStreamHandler),
     ('/upload_image', UploadImageHandler),
+    ('/subscribe_a_stream', SubscribeStreamHandler),
+    ('/unsubscribe_a_stream', SubscribeStreamHandler),
 ], debug=True)
 

@@ -20,13 +20,12 @@
 {% endif %}
 
 
-<form action="tobedeicided" method="post">
+<form action="view_single" method="post">
 <input type="submit" name="more" value="More pictures">
 <input type="hidden" name="user" value="{{ user }}">
 </form>
 
-
-{% if user == owner %}
+{% if owner != user %}
     <form action="{{ upload_url }}" method="post" enctype="multipart/form-data">
     <h3>Add an Image</h3>
     <table class="table table-striped">
@@ -36,13 +35,15 @@
         </tr>
     </table>
     </form>
-
+{% elif hasSub %}
+    <form action="/view_single?stream_id={{ stream_id }}" method="post">
+    <input type="submit" name="Subscribe" value="Unsubscribe">
+    </form>>
 {% else %}
+    <form action="/view_single?stream_id={{ stream_id }}" method="post">
     <input type="submit" name="Subscribe" value="Subscribe">
-    <input type="hidden" name="user" value="{{ user }}">
+    </form>>
 {% endif %}
-
-
 
 </body>
 <html>

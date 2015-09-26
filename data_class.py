@@ -28,6 +28,14 @@ class Stream(ndb.Model):
         return cls.query(ancestor=ancestor_key).order(-cls.last_add)
 
 
+class StreamInfo(ndb.Model):
+    created = ndb.KeyProperty(repeated=True)
+    subscribed = ndb.KeyProperty(repeated=True)
+
+    @classmethod
+    def query_stream(cls, ancestor_key):
+        return cls.query(ancestor=ancestor_key)
+
 '''
 class User(ndb.Model):
     user_id = ndb.StringProperty()
