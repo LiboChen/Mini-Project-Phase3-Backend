@@ -1,0 +1,54 @@
+{% extends "_manage_base.html" %}
+{% block content %}
+<head>
+    <style type="text/css">
+        #container {width:1100px;}
+        img { width:280px; height:250px; margin: 0 10px; float:left;}
+    </style>
+</head>
+
+<body>
+
+{% if has_image %}
+<div id="container">
+    {% for url in image_url %}
+        {% if url != "" %}
+        <div><img src="{{ url }}"></div>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+
+<form action="tobedeicided" method="post">
+<input type="submit" name="more" value="More pictures">
+<input type="hidden" name="user" value="{{ user }}">
+</form>
+
+
+{% if user == owner %}
+    <form action="{{ upload_url }}" method="post" enctype="multipart/form-data">
+    <h3>Add an Image</h3>
+    <table class="table table-striped">
+        <tr>
+            <th><input type="file" name="image"/></th>
+            <th><input type="submit" name="upload" value="Upload file"></th>
+        </tr>
+    </table>
+    </form>
+
+{% else %}
+    <input type="submit" name="Subscribe" value="Subscribe">
+    <input type="hidden" name="user" value="{{ user }}">
+{% endif %}
+
+
+
+</body>
+<html>
+
+{% endblock %}
+
+
+
+
