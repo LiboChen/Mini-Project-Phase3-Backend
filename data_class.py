@@ -21,7 +21,7 @@ class Stream(ndb.Model):
     num_images = ndb.IntegerProperty()
     cover_url = ndb.StringProperty()
     subscribers = ndb.StringProperty(repeated=True)
-    tags = ndb.StringProperty(repeated=True)
+    tags = ndb.StringProperty()
     blob_key = ndb.BlobKeyProperty(repeated=True)
     view_queue = ndb.DateTimeProperty(repeated=True)
 
@@ -39,14 +39,13 @@ class StreamInfo(ndb.Model):
         return cls.query(ancestor=ancestor_key)
 
 
-class TrendingStream:
-    def __init__(self, blob_key, views, stream_id):
-        if blob_key:
-            self.url = images.get_serving_url(blob_key)
-        else:
-            self.url = ""
+class ShowStream:
+    def __init__(self, image_url, views, stream_id):
+        self.url = image_url
         self.views = views
         self.stream_id = stream_id
+
+
 
 
 '''

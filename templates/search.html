@@ -33,16 +33,14 @@
   </p>
 
   {% if query_results is defined %}
-    {{ query_results|length }} results for <b>{{ query }}</b>
+    {{ query_results |length }} results for <b>{{ query }}</b>
 
     <p>
     {% for row in query_results %}
       <p>
-      <a href="/viewstream?stream_id={{ row['stream_id'] }}">
-        {% if row['cover_url'] %}
-          <img src="{{ row['cover_url'] }}"></img>
-        {% endif %}
-        <h3>{{ row['stream_id'] }}</h3>
+      <a href="/view_single?stream_id={{ row.stream_id }}">
+          <img src="{{ row.url }}"></img>
+        <h3>{{ row.stream_id }}</h3>
       </a>
       </p>
     {% endfor %}
