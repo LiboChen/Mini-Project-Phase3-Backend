@@ -14,9 +14,6 @@
         {% for stream in streams %}
         <td class="col1" style="padding-left:10px">
           <a href="/view_single?stream_id={{stream.stream_id}}">
-              <!--{% if stream.cover_url %}-->
-                <!--<img src="{{ stream.cover_url }}"></img>-->
-              <!--{% endif %}e-->
             <img src="{{stream.url}}" style="max-height:100%; max-width:100%"/>
           </a>
           <h3>{{ stream.stream_id }}</h3>
@@ -28,10 +25,10 @@
 
     <td class="col2" style="padding-left:30px">
       <form action="/trending" method="post">
-        <input type="radio" name="rate" value="0">No reports<br>
-        <input type="radio" name="rate" value="5">Every 5 minutes<br>
-        <input type="radio" name="rate" value="60">Every 1 hour<br>
-        <input type="radio" name="rate" value="1440">Every day<br>
+        <input type="radio" name="rate" value="0" {{ checked[0] }}>No reports<br>
+        <input type="radio" name="rate" value="5" {{ checked[1] }}>Every 5 minutes<br>
+        <input type="radio" name="rate" value="60" {{ checked[2] }}>Every 1 hour<br>
+        <input type="radio" name="rate" value="1440" {{ checked[3] }}>Every day<br>
         <p>
           <input type="submit" value="Update Rate">
         </p>

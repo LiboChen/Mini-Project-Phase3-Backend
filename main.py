@@ -31,6 +31,8 @@ from google.appengine.ext.webapp import blobstore_handlers
 import jinja2
 from collections import OrderedDict
 
+REPORT_RATE_MINUTES = "0"
+LAST_REPORT = None
 
 
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -409,18 +411,45 @@ class TrendingHandler(webapp2.RequestHandler):
             print trending_stream.url
         print "end for loop"
 
+        checked = [""] * 4
+        cur_rate = REPORT_RATE_MINUTES;
+
+        if cur_rate:
+            if cur_rate == '0':
+                checked[0] = "checked=checked"
+            elif cur_rate == '5':
+                checked[1] = "checked=checked"
+            elif cur_rate == '60':
+                checked[2] = "checked=checked"
+            elif cur_rate == '1440':
+                checked[3] = "checked=checked"
+        else:
+            checked[0] = "checked=checked"
+
         template_values = {
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
             'user_id': self.request.get('user_id'),
             'streams': first_three,
+            'checked': checked,
         }
 
         template = JINJA_ENVIRONMENT.get_template('trending.html')
         self.response.write(template.render(template_values))
 
     def post(self):
-        print "hellp"
+        print 'in treading post'
+        rate = self.request.get('rate')
+        global REPORT_RATE_MINUTES
+        REPORT_RATE_MINUTES = rate
+        form = {'stream_id': self.request.get('stream_id'),
+                'user': str(users.get_current_user()),
+                }
+        form_data = json.dumps(form)
+        result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/report',
+                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+
+        self.redirect('/trending')
 
 
 class ErrorHandler(webapp2.RequestHandler):
@@ -545,6 +574,21 @@ class UploadImageHandler(blobstore_handlers.BlobstoreUploadHandler):
             print "error!"
 
 
+class ReportHandler(webapp2.RequestHandler):
+    def post(self):
+        print 'in report handler'
+        data = json.loads(self.request.body)
+        user = data['user']
+        print "NOW RATE BECOMES", REPORT_RATE_MINUTES
+        message = 'hello world'
+        mail.send_mail(sender=str(user)+"<"+str(user)+"@gmail.com>",
+                       to="<rfnepku@gmail.com>",
+                       subject="Trending Report",
+                       body=message)
+        print message
+        return
+
+
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/login', LoginHandler),
@@ -561,5 +605,6 @@ app = webapp2.WSGIApplication([
     ('/subscribe_a_stream', SubscribeStreamHandler),
     ('/unsubscribe_a_stream', UnsubscribeStreamHandler),
     ('/view_more', ViewMoreHandler),
+    ('/report', ReportHandler),
 ], debug=True)
 

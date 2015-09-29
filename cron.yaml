@@ -1,0 +1,4 @@
+cron:
+- description: send trending report
+  url: /report
+  schedule: every 3 minutes
