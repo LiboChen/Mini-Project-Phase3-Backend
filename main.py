@@ -385,6 +385,7 @@ class SearchHandler(webapp2.RequestHandler):
 
 class TrendingHandler(webapp2.RequestHandler):
     def get(self):
+        print "updating top 3 popular streams"
         first_three = []
         all_streams = Stream.query(Stream.stream_id != '').fetch()
         mycmp = lambda x, y: (len(y.view_queue) - len(x.view_queue))
@@ -442,12 +443,12 @@ class TrendingHandler(webapp2.RequestHandler):
         rate = self.request.get('rate')
         global REPORT_RATE_MINUTES
         REPORT_RATE_MINUTES = rate
-        form = {'stream_id': self.request.get('stream_id'),
-                'user': str(users.get_current_user()),
-                }
-        form_data = json.dumps(form)
-        result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/report',
-                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+        # form = {'stream_id': self.request.get('stream_id'),
+        #         'user': str(users.get_current_user()),
+        #         }
+        # form_data = json.dumps(form)
+        # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/report',
+        #                         method=urlfetch.GET, headers={'Content-Type': 'application/json'})
 
         self.redirect('/trending')
 
@@ -575,13 +576,60 @@ class UploadImageHandler(blobstore_handlers.BlobstoreUploadHandler):
 
 
 class ReportHandler(webapp2.RequestHandler):
-    def post(self):
-        print 'in report handler'
-        data = json.loads(self.request.body)
-        user = data['user']
+    def get(self):
+        print 'in report handler', str(users.get_current_user())
+        # data = json.loads(self.request.body)
+        # user = data['user']
         print "NOW RATE BECOMES", REPORT_RATE_MINUTES
-        message = 'hello world'
-        mail.send_mail(sender=str(user)+"<"+str(user)+"@gmail.com>",
+        if REPORT_RATE_MINUTES == '0':
+            return
+
+        global LAST_REPORT
+        if not LAST_REPORT:
+            LAST_REPORT = datetime.now()
+            print "because LAST_REPORT is not set, i return"
+            return
+
+        delta = (datetime.now() - LAST_REPORT).seconds
+        if delta < int(REPORT_RATE_MINUTES) * 60:
+            print "because delta is not enough, i return"
+            return
+
+        LAST_REPORT = datetime.now()
+
+
+        #get trending information to send
+        first_three = []
+        all_streams = Stream.query(Stream.stream_id != '').fetch()
+        mycmp = lambda x, y: (len(y.view_queue) - len(x.view_queue))
+        all_streams.sort(mycmp)
+        size = 3 if (len(all_streams) - 3) > 0 else len(all_streams)
+        print size
+        for i in range(size):
+            stream = all_streams[i]
+            print "current stream is", stream.stream_id
+            views = len(stream.view_queue)
+            stream_id = stream.stream_id
+            blob_key_list = stream.blob_key
+            if stream.cover_url != '':
+                image_url = stream.cover_url
+            elif len(blob_key_list) == 0:
+                image_url = ''
+            else:
+                image_url = images.get_serving_url(blob_key_list[0])
+
+            trending_stream = ShowStream(image_url, views, stream_id)
+            print "current trending stream is", trending_stream
+            first_three.append(trending_stream)
+            print trending_stream.url
+        print "end for loop"
+
+        message = "Top three trending streams:"
+        for element in first_three:
+            message += element.stream_id + " viewed by " + str(element.views) + " times; "
+
+        print "message is *******************", message
+        mail.send_mail(sender="libo <chenlibo0928@gmail.com>",
                        to="<rfnepku@gmail.com>",
                        subject="Trending Report",
                        body=message)
