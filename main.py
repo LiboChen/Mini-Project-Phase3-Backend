@@ -118,14 +118,14 @@ class ManageHandler(webapp2.RequestHandler):
 
         form_data = json.dumps(form)
         if self.request.get('delete'):
-            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/delete_a_stream',
+            result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/delete_a_stream',
                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/delete_a_stream',
+            # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/delete_a_stream',
             #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         if self.request.get('unsubscribe'):
-            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
+            result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
+            # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
             #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
 
         self.redirect('/manage')
@@ -162,9 +162,9 @@ class CreateHandler(webapp2.RequestHandler):
                 }
 
         form_data = json.dumps(form)
-        result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/create_a_new_stream',
+        result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/create_a_new_stream',
                                 method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-        # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/create_a_new_stream',
+        # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/create_a_new_stream',
         #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         self.redirect('/manage')
 
@@ -241,14 +241,14 @@ class ViewSingleHandler(webapp2.RequestHandler):
                 }
         form_data = json.dumps(form)
         if self.request.get('Subscribe') == 'Subscribe':
-          result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/subscribe_a_stream',
+          result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/subscribe_a_stream',
                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-          #   result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/subscribe_a_stream',
+          #   result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/subscribe_a_stream',
           #                           method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         elif self.request.get('Subscribe') == 'Unsubscribe':
-            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
+            result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
                                     method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
+            # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
             #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         self.redirect('/manage')
 
