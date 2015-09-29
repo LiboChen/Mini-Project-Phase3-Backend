@@ -20,12 +20,6 @@
 {% endif %}
 
 
-<form action="view_single" method="post">
-<input type="submit" name="more" value="More pictures">
-<input type="hidden" name="user" value="{{ user }}">
-    <input type="hidden" name="stream_id" value="{{ stream_id}}">
-</form>
-
 {% if owner == user %}
     <form action="{{ upload_url }}" method="post" enctype="multipart/form-data">
     <h3>Add an Image</h3>

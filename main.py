@@ -145,13 +145,24 @@ class CreateHandler(webapp2.RequestHandler):
 
     def post(self):
         user = users.get_current_user()
+        stream_id = self.request.get('stream_id')
+        print 'first', stream_id
+        streams = Stream.query(Stream.stream_id != '').fetch()
+        for stream in streams:
+            print 'hi', stream.stream_id
+            if stream.stream_id == stream_id:
+                print 'change the world change the world'
+                info = {'error': 'you tried to create a stream whose name already existed'}
+                info = urllib.urlencode(info)
+                self.redirect('/error?'+info)
+                return
+
         if self.request.get("subscribers"):
             mail.send_mail(sender=str(user)+"<"+str(user)+"@gmail.com>",
                            to="<"+self.request.get("subscribers")+">",
                            subject="Please subscribe my stream",
                            body=self.request.get("message"))
 
-        self.request
         form = {'stream_id': self.request.get('stream_id'),
                 'user_id': str(users.get_current_user()),
                 'tags': self.request.get('tags'),
@@ -182,12 +193,6 @@ class ViewSingleHandler(webapp2.RequestHandler):
         user_streams = Stream.query(Stream.stream_id == stream_id).fetch()
         blob_key_list = []
         image_url = [""] * 3
-
-        # for stream in user_streams:
-        #     owner = stream.owner
-        #     print 'stream id is', stream.stream_id
-        #     if stream.stream_id == stream_id:
-        #         blob_key_list = stream.blob_key
 
         stream = user_streams[0]
         owner = stream.owner
@@ -250,7 +255,13 @@ class ViewSingleHandler(webapp2.RequestHandler):
                                     method=urlfetch.POST, headers={'Content-Type': 'application/json'})
             # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
             #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-        self.redirect('/manage')
+
+        if self.request.get('more'):
+            info = {'stream_id': self.request.get('stream_id')}
+            info = urllib.urlencode(info)
+            self.redirect('/view_more?'+info)
+        else:
+            self.redirect('/manage')
 
 
 class ViewAllHandler(webapp2.RequestHandler):
@@ -275,6 +286,62 @@ class ViewAllHandler(webapp2.RequestHandler):
         }
 
         template = JINJA_ENVIRONMENT.get_template('viewall.html')
+        self.response.write(template.render(template_values))
+
+
+class ViewMoreHandler(webapp2.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        stream_id = self.request.get('stream_id')
+        print 'stream id is', stream_id
+        info = {'stream_id': self.request.get('stream_id')}
+        info = urllib.urlencode(info)
+        upload_url = blobstore.create_upload_url('/upload_image?'+info)
+
+#       we should use the actual user
+        user_streams = Stream.query(Stream.stream_id == stream_id).fetch()
+
+        stream = user_streams[0]
+        owner = stream.owner
+        print 'stream id is', stream.stream_id
+        if owner != str(user):
+            stream.views += 1
+            stream.view_queue.append(datetime.now())
+            stream.put()
+        blob_key_list = stream.blob_key     #get blob_key_list should be after stream.put()
+
+        has_image = True
+        image_url = []
+        if len(blob_key_list) > 0:
+            for blob_key in blob_key_list:
+                image_url.append(images.get_serving_url(blob_key))
+
+        #calculate hasSub
+        qry = StreamInfo.query_stream(ndb.Key('User', str(user))).fetch()
+        has_sub = False
+        if len(qry) == 0:
+            has_sub = False
+        else:
+            for key in qry[0].subscribed:
+                if key.get().stream_id == stream_id:
+                    has_sub = True
+                    break
+
+        template_values = {
+            'nav_links': USER_NAV_LINKS,
+            'path': os.path.basename(self.request.path).capitalize(),
+            'owner': owner,         #the owner of the stream
+            'user': str(users.get_current_user()),   #current user
+            'upload_url': upload_url,
+            'image_url': image_url,
+            'has_image': has_image,
+            'hasSub': has_sub,
+            'stream_id': stream_id,
+        }
+
+        print "owner is ", template_values['owner']
+        print "user is ", template_values['user']
+        template = JINJA_ENVIRONMENT.get_template('viewmore.html')
         self.response.write(template.render(template_values))
 
 
@@ -355,13 +422,15 @@ class TrendingHandler(webapp2.RequestHandler):
     def post(self):
         print "hellp"
 
+
 class ErrorHandler(webapp2.RequestHandler):
     def get(self):
+        error_msg = self.request.get('error')
         template_values = {
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
             'user_id': self.request.get('user_id'),
-            'error': 'create duplicate image',
+            'error': error_msg,
         }
 
         template = JINJA_ENVIRONMENT.get_template('error.html')
@@ -398,7 +467,8 @@ class DeleteStreamHandler(webapp2.RequestHandler):
             qry = Stream.query(Stream.stream_id == stream_id).fetch()
             if len(qry) > 0:
                 qry[0].key.delete()
-            self.redirect('/manage')
+
+        self.redirect('/manage')
 
 
 class SubscribeStreamHandler(webapp2.RequestHandler):
@@ -490,5 +560,6 @@ app = webapp2.WSGIApplication([
     ('/upload_image', UploadImageHandler),
     ('/subscribe_a_stream', SubscribeStreamHandler),
     ('/unsubscribe_a_stream', UnsubscribeStreamHandler),
+    ('/view_more', ViewMoreHandler),
 ], debug=True)
 
