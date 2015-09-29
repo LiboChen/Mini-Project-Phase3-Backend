@@ -431,17 +431,16 @@ class UnsubscribeStreamHandler(webapp2.RequestHandler):
         print 'in unsubscribe handler'
         data = json.loads(self.request.body)
         user = data['user']
-        stream_id = data['stream_id']
-        print user, 'doing', stream_id
         ancestor_key = ndb.Key('User', user)
         stream_info = StreamInfo.query_stream(ancestor_key).fetch()
         print stream_info[0].subscribed
-        for key in stream_info[0].subscribed:
-            print key.get().stream_id, stream_id
-            if key.get().stream_id == stream_id:
-                stream_info[0].subscribed.remove(key)
-                stream_info[0].put()       #remember to put it back in ndbstore
-                break
+        for stream_id in data['stream_id']:
+            for key in stream_info[0].subscribed:
+                print key.get().stream_id, stream_id
+                if key.get().stream_id == stream_id:
+                    stream_info[0].subscribed.remove(key)
+                    stream_info[0].put()       #remember to put it back in ndbstore
+                    break
 
         self.redirect('/manage')
 
