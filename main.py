@@ -201,6 +201,8 @@ class ViewSingleHandler(webapp2.RequestHandler):
         print 'stream id is', stream.stream_id
         if owner != str(user):
             stream.views += 1
+            while len(stream.view_queue) > 0 and (datetime.now() - stream.view_queue[0]).seconds > 3600:
+                del stream.view_queue[0]
             stream.view_queue.append(datetime.now())
             stream.put()
         blob_key_list = stream.blob_key     #get blob_key_list should be after stream.put()
@@ -221,7 +223,7 @@ class ViewSingleHandler(webapp2.RequestHandler):
             has_sub = False
         else:
             for key in qry[0].subscribed:
-                if key.get().stream_id == stream_id:
+                if (not key) and key.get().stream_id == stream_id:
                     has_sub = True
                     break
 
@@ -498,6 +500,12 @@ class DeleteStreamHandler(webapp2.RequestHandler):
             if len(qry) > 0:
                 qry[0].key.delete()
 
+        #########helper code to delete zombie stream
+        # streams = Stream.query(Stream.stream_id != '').fetch()
+        # for stream in streams:
+        #     if stream.stream_id == "ereraefdas":
+        #         stream.key.delete()
+
         self.redirect('/manage')
 
 
@@ -597,7 +605,6 @@ class ReportHandler(webapp2.RequestHandler):
 
         LAST_REPORT = datetime.now()
 
-
         #get trending information to send
         first_three = []
         all_streams = Stream.query(Stream.stream_id != '').fetch()
@@ -626,7 +633,7 @@ class ReportHandler(webapp2.RequestHandler):
 
         message = "Top three trending streams:"
         for element in first_three:
-            message += element.stream_id + " viewed by " + str(element.views) + " times; "
+            message += "stream " + element.stream_id + " viewed by " + str(element.views) + " times; "
 
         print "message is *******************", message
         mail.send_mail(sender="libo <chenlibo0928@gmail.com>",
