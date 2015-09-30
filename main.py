@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#final
+#final1
 import os
 import webapp2
 import json
@@ -245,7 +245,7 @@ class ViewSingleHandler(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
     def post(self):
-        form = {'stream_id': str(self.request.get('stream_id')),
+        form = {'stream_id': self.request.get_all('stream_id'),
                 'user': str(users.get_current_user()),
                 }
         form_data = json.dumps(form)
@@ -536,9 +536,10 @@ class UnsubscribeStreamHandler(webapp2.RequestHandler):
         ancestor_key = ndb.Key('User', user)
         stream_info = StreamInfo.query_stream(ancestor_key).fetch()
         print stream_info[0].subscribed
+        print data['stream_id']
         for stream_id in data['stream_id']:
             for key in stream_info[0].subscribed:
-                print key.get().stream_id, stream_id
+                print "here is ", key.get().stream_id, stream_id
                 if key.get().stream_id == stream_id:
                     stream_info[0].subscribed.remove(key)
                     stream_info[0].put()       #remember to put it back in ndbstore
@@ -632,7 +633,7 @@ class ReportHandler(webapp2.RequestHandler):
 
         print "message is *******************", message
         mail.send_mail(sender="libo <chenlibo0928@gmail.com>",
-                       to="<rfnepku@gmail.com>",
+                       to="<nima.dini@utexas.edu>",
                        subject="Trending Report",
                        body=message)
         print message
