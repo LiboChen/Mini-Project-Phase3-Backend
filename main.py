@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+#final
 import os
 import webapp2
 import json
@@ -120,14 +120,14 @@ class ManageHandler(webapp2.RequestHandler):
 
         form_data = json.dumps(form)
         if self.request.get('delete'):
-            result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/delete_a_stream',
+            result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/delete_a_stream',
                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/delete_a_stream',
+            # result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/delete_a_stream',
             #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         if self.request.get('unsubscribe'):
-            result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
+            result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/unsubscribe_a_stream',
                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
+            # result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/unsubscribe_a_stream',
             #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
 
         self.redirect('/manage')
@@ -175,9 +175,9 @@ class CreateHandler(webapp2.RequestHandler):
                 }
 
         form_data = json.dumps(form)
-        result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/create_a_new_stream',
+        result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/create_a_new_stream',
                                 method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-        # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/create_a_new_stream',
+        # result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/create_a_new_stream',
         #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         self.redirect('/manage')
 
@@ -223,7 +223,7 @@ class ViewSingleHandler(webapp2.RequestHandler):
             has_sub = False
         else:
             for key in qry[0].subscribed:
-                if (not key) and key.get().stream_id == stream_id:
+                if key.get().stream_id == stream_id:
                     has_sub = True
                     break
 
@@ -250,14 +250,14 @@ class ViewSingleHandler(webapp2.RequestHandler):
                 }
         form_data = json.dumps(form)
         if self.request.get('Subscribe') == 'Subscribe':
-          result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/subscribe_a_stream',
+          result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/subscribe_a_stream',
                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-          #   result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/subscribe_a_stream',
+          #   result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/subscribe_a_stream',
           #                           method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         elif self.request.get('Subscribe') == 'Unsubscribe':
-            result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
+            result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/unsubscribe_a_stream',
                                     method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/unsubscribe_a_stream',
+            # result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/unsubscribe_a_stream',
             #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
 
         if self.request.get('more'):
@@ -449,7 +449,7 @@ class TrendingHandler(webapp2.RequestHandler):
         #         'user': str(users.get_current_user()),
         #         }
         # form_data = json.dumps(form)
-        # result = urlfetch.fetch(payload=form_data, url='http://mini-project-phase1.appspot.com/report',
+        # result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/report',
         #                         method=urlfetch.GET, headers={'Content-Type': 'application/json'})
 
         self.redirect('/trending')
@@ -499,12 +499,6 @@ class DeleteStreamHandler(webapp2.RequestHandler):
             qry = Stream.query(Stream.stream_id == stream_id).fetch()
             if len(qry) > 0:
                 qry[0].key.delete()
-
-        #########helper code to delete zombie stream
-        # streams = Stream.query(Stream.stream_id != '').fetch()
-        # for stream in streams:
-        #     if stream.stream_id == "ereraefdas":
-        #         stream.key.delete()
 
         self.redirect('/manage')
 
@@ -605,6 +599,7 @@ class ReportHandler(webapp2.RequestHandler):
 
         LAST_REPORT = datetime.now()
 
+
         #get trending information to send
         first_three = []
         all_streams = Stream.query(Stream.stream_id != '').fetch()
@@ -633,7 +628,7 @@ class ReportHandler(webapp2.RequestHandler):
 
         message = "Top three trending streams:"
         for element in first_three:
-            message += "stream " + element.stream_id + " viewed by " + str(element.views) + " times; "
+            message += element.stream_id + " viewed by " + str(element.views) + " times; "
 
         print "message is *******************", message
         mail.send_mail(sender="libo <chenlibo0928@gmail.com>",
@@ -662,4 +657,3 @@ app = webapp2.WSGIApplication([
     ('/view_more', ViewMoreHandler),
     ('/report', ReportHandler),
 ], debug=True)
-
