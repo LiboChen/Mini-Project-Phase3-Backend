@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#final1
+#final11
 import os
 import webapp2
 import json
@@ -245,16 +245,17 @@ class ViewSingleHandler(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
     def post(self):
-        form = {'stream_id': self.request.get_all('stream_id'),
-                'user': str(users.get_current_user()),
-                }
-        form_data = json.dumps(form)
+        form = {'user': str(users.get_current_user()),}
         if self.request.get('Subscribe') == 'Subscribe':
-          result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/subscribe_a_stream',
+            form['stream_id'] = self.request.get('stream_id')
+            form_data = json.dumps(form)
+            result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/subscribe_a_stream',
                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
           #   result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/subscribe_a_stream',
           #                           method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         elif self.request.get('Subscribe') == 'Unsubscribe':
+            form['stream_id'] = self.request.get_all('stream_id')
+            form_data = json.dumps(form)
             result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/unsubscribe_a_stream',
                                     method=urlfetch.POST, headers={'Content-Type': 'application/json'})
             # result = urlfetch.fetch(payload=form_data, url='http://miniprojectphase1-1083.appspot.com/unsubscribe_a_stream',
