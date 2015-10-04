@@ -13,22 +13,47 @@
     {% block head %}
     {% endblock %}
   </head>
+
+  <style>
+    #header {
+        color:cornflowerblue;
+        padding:10px;
+    }
+    #nav{
+        padding:10px;
+        background-color: wheat;
+    }
+    .btn-primary{
+        size = 20px;
+        text-decoration-color: #262626;
+    }
+    .glyphicon-plus{
+        padding:2px;
+        font-size: smaller;
+        margin-left: 2px;
+    }
+  </style>
+
   <body>
     
-    <h1>Connex.us</h1>
+    <div id = "header" >
+        <h1>Connex.us</h1>
+    </div>
 
-    <span class="h4">
-    {% for link in nav_links %}
-      {% if loop.index0 > 0 %}
-        |
-      {% endif %}
-      {% if path == link %}
-        {{ link }}
-      {% else %}
-        <a href="{{ nav_links[link] }}">{{ link }}</a>
-      {% endif %}
-    {% endfor %}
-    </span>
+
+    <nav class="navbar navbar-default" role="navigation">
+    <div>
+      <ul class="nav navbar-nav">
+          {% for link in nav_links %}
+            {% if path == link %}
+                 <li class="active"><a href="{{ nav_links[link] }}">{{link}}</a></li>
+            {% else %}
+                          <li><a href="{{ nav_links[link] }}">{{ link }}</a></li>
+                {% endif %}
+        {% endfor %}
+      </ul>
+   </div>
+</nav>
 
     {% block content %}
     {% endblock %}
