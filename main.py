@@ -41,7 +41,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     autoescape=True)
 
 
-NAV_LINKS = sorted(('Create', 'View', 'Search', 'Trending', 'Manage'))
+NAV_LINKS = sorted(('Create', 'View', 'Search', 'Trending', 'Manage', 'geoMap'))
 NAV_LINKS = OrderedDict(zip(NAV_LINKS, map(lambda x: '/'+x.lower(), NAV_LINKS) ))
 USER_NAV_LINKS = NAV_LINKS.copy()
 
@@ -640,6 +640,15 @@ class ReportHandler(webapp2.RequestHandler):
         print message
         return
 
+class GeoMapHandler(webapp2.RequestHandler):
+    def get(self):
+        template_values = {
+            'nav_links': USER_NAV_LINKS,
+            'path': os.path.basename(self.request.path).capitalize(),
+        }
+
+        template = JINJA_ENVIRONMENT.get_template('geomap.html')
+        self.response.write(template.render(template_values))
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
@@ -658,4 +667,5 @@ app = webapp2.WSGIApplication([
     ('/unsubscribe_a_stream', UnsubscribeStreamHandler),
     ('/view_more', ViewMoreHandler),
     ('/report', ReportHandler),
+    ('/geomap',GeoMapHandler),
 ], debug=True)
