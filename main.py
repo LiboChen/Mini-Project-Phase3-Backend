@@ -153,7 +153,6 @@ class CreateHandler(webapp2.RequestHandler):
         for stream in streams:
             print 'hi', stream.stream_id
             if stream.stream_id == stream_id:
-                print 'change the world change the world'
                 info = {'error': 'you tried to create a stream whose name already existed'}
                 info = urllib.urlencode(info)
                 self.redirect('/error?'+info)
@@ -358,7 +357,7 @@ class SearchHandler(webapp2.RequestHandler):
         search_result = []
         if pattern:
             for stream in all_streams:
-                if pattern in stream.stream_id:
+                if pattern in stream.tags:
                     stream_id = stream.stream_id
                     blob_key_list = stream.blob_key
                     if stream.cover_url != '':
@@ -640,6 +639,7 @@ class ReportHandler(webapp2.RequestHandler):
         print message
         return
 
+
 class GeoMapHandler(webapp2.RequestHandler):
     def get(self):
         template_values = {
@@ -649,6 +649,29 @@ class GeoMapHandler(webapp2.RequestHandler):
 
         template = JINJA_ENVIRONMENT.get_template('geomap.html')
         self.response.write(template.render(template_values))
+
+
+class AutoCompleteHandler(webapp2.RequestHandler):
+    def get(self):
+        pattern = self.request.get("term")
+        print pattern
+        all_streams = Stream.query(Stream.stream_id != '').fetch()
+        ret_tags = []
+        if pattern:
+            for stream in all_streams:
+                if pattern in stream.tags:
+                    ret_tags.append(stream.tags)
+
+        ret_tags.sort();
+        if len(ret_tags) == 0:
+            ready = False
+        else:
+            ready = True
+
+        context = {"ready": ready, "tags": ret_tags}
+        print context
+        self.response.write(json.dumps(context))
+
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
@@ -668,4 +691,5 @@ app = webapp2.WSGIApplication([
     ('/view_more', ViewMoreHandler),
     ('/report', ReportHandler),
     ('/geomap',GeoMapHandler),
+    ('/auto_complete', AutoCompleteHandler),
 ], debug=True)
