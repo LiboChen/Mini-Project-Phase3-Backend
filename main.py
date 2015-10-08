@@ -690,6 +690,6 @@ app = webapp2.WSGIApplication([
     ('/unsubscribe_a_stream', UnsubscribeStreamHandler),
     ('/view_more', ViewMoreHandler),
     ('/report', ReportHandler),
-    ('/geomap',GeoMapHandler),
+    ('/geomap', GeoMapHandler),
     ('/auto_complete', AutoCompleteHandler),
 ], debug=True)
