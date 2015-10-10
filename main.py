@@ -95,38 +95,6 @@ class UploadImageHandler(webapp2.RequestHandler):
     def head(self):
         pass
 
-    # def post(self):
-    #     pictures = self.request.get_all('files[]')
-    #     results = []
-    #     if len(pictures) > 0:
-    #         stream_id = self.request.get('stream_id')
-    #         print "stream name is ", stream_id
-    #         stream_query = Stream.query(Stream.stream_id == stream_id)
-    #         stream = stream_query.fetch()[0]
-    #         print "libo stream is", stream
-    #         if stream.owner == str(users.get_current_user()):
-    #             print "they are equal"
-    #             for image in pictures:
-    #                 print "libo stream name is", stream_id
-    #                 stream.num_images += 1
-    #                 user_image = Image(parent=db.Key.from_path('Stream', stream_id))
-    #                 print "type of "
-    #                 image = images.resize(image, 320, 400)
-    #                 user_image.image = db.Blob(image)
-    #                 stream.last_add = str(datetime.now())
-    #                 user_image.put()
-    #                 results.append({'name': '', 'url': '', 'type': '', 'size': 0})
-    #             stream.put()
-    #     print 'end upload successfully'
-    #
-    #     print "returning result is ", results
-    #     # if 'application/json' in self.request.headers.get('Accept'):
-    #
-    #     s = json.dumps({'files': results}, separators=(',', ':'))
-    #     self.response.headers['Content-Type'] = 'application/json'
-    #     print "duming material is ", s
-    #     return self.response.write(s)
-
     def post(self):
         pictures = self.request.get_all('files[]')
         results = []
