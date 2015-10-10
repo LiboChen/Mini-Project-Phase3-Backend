@@ -1,9 +1,9 @@
 cron:
 - description: send trending report
   url: /report
-  schedule: every 1 minutes
+  schedule: every 10000 minutes
 
 - description: update trending report
   url: /trending
-  schedule: every 1 minutes
+  schedule: every 10000 minutes
 

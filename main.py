@@ -14,26 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#final11
+#1009
 import os
 import webapp2
 import json
 import urllib
-from data_class import Stream, StreamInfo, ShowStream
+import re
+from data_class import Stream, StreamInfo, ShowStream, Image
 from datetime import datetime
 from google.appengine.api import users
 from google.appengine.api import images
 from google.appengine.api import mail
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
-from google.appengine.ext import blobstore
-from google.appengine.ext.webapp import blobstore_handlers
+from google.appengine.ext import db
 import jinja2
 from collections import OrderedDict
 
 REPORT_RATE_MINUTES = "0"
 LAST_REPORT = None
+INDEX = 0
+INDEX1 = 2
 
+# SERVICES_URL = 'http://localhost:8080/'
+SERVICES_URL = 'http://lyrical-ward-109319.appspot.com/'
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader('templates'),
@@ -44,6 +48,84 @@ JINJA_ENVIRONMENT = jinja2.Environment(
 NAV_LINKS = sorted(('Create', 'View', 'Search', 'Trending', 'Manage', 'geoMap'))
 NAV_LINKS = OrderedDict(zip(NAV_LINKS, map(lambda x: '/'+x.lower(), NAV_LINKS) ))
 USER_NAV_LINKS = NAV_LINKS.copy()
+
+WEBSITE = 'https://blueimp.github.io/jQuery-File-Upload/'
+MIN_FILE_SIZE = 1  # bytes
+MAX_FILE_SIZE = 5000000  # bytes
+IMAGE_TYPES = re.compile('image/(gif|p?jpeg|(x-)?png)')
+ACCEPT_FILE_TYPES = IMAGE_TYPES
+THUMBNAIL_MODIFICATOR = '=s80'  # max width / height
+EXPIRATION_TIME = 300  # seconds
+
+
+class UploadImageHandler(webapp2.RequestHandler):
+    def initialize(self, request, response):
+        super(UploadImageHandler, self).initialize(request, response)
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+        self.response.headers[
+            'Access-Control-Allow-Methods'
+        ] = 'OPTIONS, HEAD, GET, POST, PUT, DELETE'
+        self.response.headers[
+            'Access-Control-Allow-Headers'
+        ] = 'Content-Type, Content-Range, Content-Disposition'
+
+    def json_stringify(self, obj):
+        return json.dumps(obj, separators=(',', ':'))
+
+    def validate(self, file):
+        if file['size'] < MIN_FILE_SIZE:
+            file['error'] = 'File is too small'
+        elif file['size'] > MAX_FILE_SIZE:
+            file['error'] = 'File is too big'
+        elif not ACCEPT_FILE_TYPES.match(file['type']):
+            file['error'] = 'Filetype not allowed'
+        else:
+            return True
+        return False
+
+    def get_file_size(self, file):
+        file.seek(0, 2)  # Seek to the end of the file
+        size = file.tell()  # Get the position of EOF
+        file.seek(0)  # Reset the file position to the beginning
+        return size
+
+    def options(self):
+        pass
+
+    def head(self):
+        pass
+
+    def post(self):
+        pictures = self.request.get_all('files[]')
+        results = []
+        if len(pictures) > 0:
+            stream_id = self.request.get('stream_id')
+            print "stream name is ", stream_id
+            stream_query = Stream.query(Stream.stream_id == stream_id)
+            stream = stream_query.fetch()[0]
+            print "libo stream is", stream
+            if stream.owner == str(users.get_current_user()):
+                print "they are equal"
+                for image in pictures:
+                    print "libo stream name is", stream_id
+                    stream.num_images += 1
+                    user_image = Image(parent=db.Key.from_path('Stream', stream_id))
+                    print "type of "
+                    image = images.resize(image, 320, 400)
+                    user_image.image = db.Blob(image)
+                    stream.last_add = str(datetime.now())
+                    user_image.put()
+                    results.append({'name': '', 'url': '', 'type': '', 'size': 0})
+                stream.put()
+        print 'end upload successfully'
+
+        print "returning result is ", results
+        # if 'application/json' in self.request.headers.get('Accept'):
+
+        s = json.dumps({'files': results}, separators=(',', ':'))
+        self.response.headers['Content-Type'] = 'application/json'
+        print "duming material is ", s
+        return self.response.write(s)
 
 
 class MainPage(webapp2.RequestHandler):
@@ -120,16 +202,11 @@ class ManageHandler(webapp2.RequestHandler):
 
         form_data = json.dumps(form)
         if self.request.get('delete'):
-            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/delete_a_stream',
-                               method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/delete_a_stream',
-            #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+            result = urlfetch.fetch(payload=form_data, url=SERVICES_URL + 'delete_a_stream',
+                                    method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         if self.request.get('unsubscribe'):
-            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
-                               method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
-            #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-
+            result = urlfetch.fetch(payload=form_data, url=SERVICES_URL + 'unsubscribe_a_stream',
+                                    method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         self.redirect('/manage')
 
 
@@ -174,10 +251,8 @@ class CreateHandler(webapp2.RequestHandler):
                 }
 
         form_data = json.dumps(form)
-        result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/create_a_new_stream',
+        result = urlfetch.fetch(payload=form_data, url=SERVICES_URL + 'create_a_new_stream',
                                 method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-        # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/create_a_new_stream',
-        #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         self.redirect('/manage')
 
 
@@ -188,11 +263,9 @@ class ViewSingleHandler(webapp2.RequestHandler):
         print 'stream id is', stream_id
         info = {'stream_id': self.request.get('stream_id')}
         info = urllib.urlencode(info)
-        upload_url = blobstore.create_upload_url('/upload_image?'+info)
 
 #       we should use the actual user
         user_streams = Stream.query(Stream.stream_id == stream_id).fetch()
-        blob_key_list = []
         image_url = [""] * 3
 
         stream = user_streams[0]
@@ -204,17 +277,21 @@ class ViewSingleHandler(webapp2.RequestHandler):
                 del stream.view_queue[0]
             stream.view_queue.append(datetime.now())
             stream.put()
-        blob_key_list = stream.blob_key     #get blob_key_list should be after stream.put()
 
+        #get first three pictures
         counter = 0
         has_image = True
-        if len(blob_key_list) > 0:
-            for blob_key in blob_key_list:
-                image_url[counter] = images.get_serving_url(blob_key)
-                counter += 1
-                if counter == 3:
-                    break;
+        image_query = db.GqlQuery("SELECT *FROM Image WHERE ANCESTOR IS :1 ORDER BY upload_date DESC",
+                                  db.Key.from_path('Stream', stream.stream_id))
 
+        print "type of gqlquery", type(image_query)
+        for image in image_query[0:stream.num_images]:
+            image_url[counter] = "image?image_id=" + str(image.key())
+            counter += 1
+            if counter == 3:
+                break
+
+        print "image url is", image_url
         #calculate hasSub
         qry = StreamInfo.query_stream(ndb.Key('User', str(user))).fetch()
         has_sub = False
@@ -225,7 +302,7 @@ class ViewSingleHandler(webapp2.RequestHandler):
                 if key.get().stream_id == stream_id:
                     has_sub = True
                     break
-
+        upload_url = ''
         template_values = {
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
@@ -248,17 +325,13 @@ class ViewSingleHandler(webapp2.RequestHandler):
         if self.request.get('Subscribe') == 'Subscribe':
             form['stream_id'] = self.request.get('stream_id')
             form_data = json.dumps(form)
-            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/subscribe_a_stream',
+            result = urlfetch.fetch(payload=form_data, url=SERVICES_URL + 'subscribe_a_stream',
                                method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-          #   result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/subscribe_a_stream',
-          #                           method=urlfetch.POST, headers={'Content-Type': 'application/json'})
         elif self.request.get('Subscribe') == 'Unsubscribe':
             form['stream_id'] = self.request.get_all('stream_id')
             form_data = json.dumps(form)
-            result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
+            result = urlfetch.fetch(payload=form_data, url=SERVICES_URL + 'unsubscribe_a_stream',
                                     method=urlfetch.POST, headers={'Content-Type': 'application/json'})
-            # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/unsubscribe_a_stream',
-            #                         method=urlfetch.POST, headers={'Content-Type': 'application/json'})
 
         if self.request.get('more'):
             info = {'stream_id': self.request.get('stream_id')}
@@ -266,6 +339,12 @@ class ViewSingleHandler(webapp2.RequestHandler):
             self.redirect('/view_more?'+info)
         else:
             self.redirect('/manage')
+
+
+class ViewImageHandler(webapp2.RequestHandler):
+    def get(self):
+        img = db.get(self.request.get('image_id'))
+        self.response.out.write(img.image)
 
 
 class ViewAllHandler(webapp2.RequestHandler):
@@ -277,10 +356,7 @@ class ViewAllHandler(webapp2.RequestHandler):
             if stream.cover_url:
                 image_url.append([stream.cover_url, stream.stream_id])
             else:
-                blob_key_list = stream.blob_key
-                if len(blob_key_list) > 0:
-                    blob_key = blob_key_list[0]
-                    image_url.append([images.get_serving_url(blob_key), stream.stream_id])
+                image_url.append(["https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3DFxGhXSmn0MHjbEEtw-0N9sDKhyIP7tM_r3Wo1mY7WhY2xvZ", stream.stream_id])
 
         template_values = {
             'nav_links': USER_NAV_LINKS,
@@ -300,8 +376,6 @@ class ViewMoreHandler(webapp2.RequestHandler):
         print 'stream id is', stream_id
         info = {'stream_id': self.request.get('stream_id')}
         info = urllib.urlencode(info)
-        upload_url = blobstore.create_upload_url('/upload_image?'+info)
-
 #       we should use the actual user
         user_streams = Stream.query(Stream.stream_id == stream_id).fetch()
 
@@ -312,13 +386,15 @@ class ViewMoreHandler(webapp2.RequestHandler):
             stream.views += 1
             stream.view_queue.append(datetime.now())
             stream.put()
-        blob_key_list = stream.blob_key     #get blob_key_list should be after stream.put()
 
         has_image = True
         image_url = []
-        if len(blob_key_list) > 0:
-            for blob_key in blob_key_list:
-                image_url.append(images.get_serving_url(blob_key))
+        image_query = db.GqlQuery("SELECT *FROM Image WHERE ANCESTOR IS :1 ORDER BY upload_date DESC",
+                                  db.Key.from_path('Stream', stream.stream_id))
+
+        for image in image_query[0: stream.num_images]:
+            s = "image?image_id=" + str(image.key())
+            image_url.append(s)
 
         #calculate hasSub
         qry = StreamInfo.query_stream(ndb.Key('User', str(user))).fetch()
@@ -331,12 +407,12 @@ class ViewMoreHandler(webapp2.RequestHandler):
                     has_sub = True
                     break
 
+
         template_values = {
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
             'owner': owner,         #the owner of the stream
             'user': str(users.get_current_user()),   #current user
-            'upload_url': upload_url,
             'image_url': image_url,
             'has_image': has_image,
             'hasSub': has_sub,
@@ -359,13 +435,11 @@ class SearchHandler(webapp2.RequestHandler):
             for stream in all_streams:
                 if pattern in stream.tags:
                     stream_id = stream.stream_id
-                    blob_key_list = stream.blob_key
                     if stream.cover_url != '':
                         image_url = stream.cover_url
-                    elif len(blob_key_list) == 0:
-                        image_url = ''
                     else:
-                        image_url = images.get_serving_url(blob_key_list[0])
+                        image_url = "https://encrypted-tbn0.gstatic.com/images?" + \
+                                    "q=tbn:ANd9GcQ3DFxGhXSmn0MHjbEEtw-0N9sDKhyIP7tM_r3Wo1mY7WhY2xvZ"
                     result = ShowStream(image_url, 0, stream_id)
                     search_result.append(result)
 
@@ -399,13 +473,11 @@ class TrendingHandler(webapp2.RequestHandler):
             #print "current stream is", stream
             views = len(stream.view_queue)
             stream_id = stream.stream_id
-            blob_key_list = stream.blob_key
             if stream.cover_url != '':
                 image_url = stream.cover_url
-            elif len(blob_key_list) == 0:
-                image_url = ''
             else:
-                image_url = images.get_serving_url(blob_key_list[0])
+                image_url = "https://encrypted-tbn0.gstatic.com/images?" + \
+                            "q=tbn:ANd9GcQ3DFxGhXSmn0MHjbEEtw-0N9sDKhyIP7tM_r3Wo1mY7WhY2xvZ"
 
             trending_stream = ShowStream(image_url, views, stream_id)
 
@@ -445,13 +517,6 @@ class TrendingHandler(webapp2.RequestHandler):
         rate = self.request.get('rate')
         global REPORT_RATE_MINUTES
         REPORT_RATE_MINUTES = rate
-        # form = {'stream_id': self.request.get('stream_id'),
-        #         'user': str(users.get_current_user()),
-        #         }
-        # form_data = json.dumps(form)
-        # result = urlfetch.fetch(payload=form_data, url='http://localhost:8080/report',
-        #                         method=urlfetch.GET, headers={'Content-Type': 'application/json'})
-
         self.redirect('/trending')
 
 
@@ -548,41 +613,9 @@ class UnsubscribeStreamHandler(webapp2.RequestHandler):
         self.redirect('/manage')
 
 
-class UploadImageHandler(blobstore_handlers.BlobstoreUploadHandler):
-    def post(self):
-        print 'stream id is', self.request.get('stream_id')
-        try:
-            upload = self.get_uploads()[0]
-            print "upload size is", len(self.get_uploads())
-            print "before error1"
-            print users.get_current_user().nickname()
-
-            user = users.get_current_user()
-            ancestor_key = ndb.Key('User', str(user))
-            user_streams = Stream.query_stream(ancestor_key).fetch()
-
-            for stream in user_streams:
-                if stream.stream_id == self.request.get('stream_id'):
-                    print 'find my stream'
-                    print type(stream.blob_key)
-                    stream.blob_key.insert(0, upload.key())
-                    stream.num_images += 1
-                    stream.last_add = str(datetime.now())
-                    stream.put()
-
-            info = {'stream_id': self.request.get('stream_id')}
-            info = urllib.urlencode(info)
-            self.redirect('/view_single?' + info)
-
-        except:
-            print "error!"
-
-
 class ReportHandler(webapp2.RequestHandler):
     def get(self):
         print 'in report handler', str(users.get_current_user())
-        # data = json.loads(self.request.body)
-        # user = data['user']
         print "NOW RATE BECOMES", REPORT_RATE_MINUTES
         if REPORT_RATE_MINUTES == '0':
             return
@@ -600,7 +633,6 @@ class ReportHandler(webapp2.RequestHandler):
 
         LAST_REPORT = datetime.now()
 
-
         #get trending information to send
         first_three = []
         all_streams = Stream.query(Stream.stream_id != '').fetch()
@@ -613,13 +645,11 @@ class ReportHandler(webapp2.RequestHandler):
             print "current stream is", stream.stream_id
             views = len(stream.view_queue)
             stream_id = stream.stream_id
-            blob_key_list = stream.blob_key
             if stream.cover_url != '':
                 image_url = stream.cover_url
-            elif len(blob_key_list) == 0:
-                image_url = ''
             else:
-                image_url = images.get_serving_url(blob_key_list[0])
+                image_url = "https://encrypted-tbn0.gstatic.com/images?" \
+                            "q=tbn:ANd9GcQ3DFxGhXSmn0MHjbEEtw-0N9sDKhyIP7tM_r3Wo1mY7WhY2xvZ"
 
             trending_stream = ShowStream(image_url, views, stream_id)
             print "current trending stream is", trending_stream
@@ -680,6 +710,7 @@ app = webapp2.WSGIApplication([
     ('/create', CreateHandler),
     ('/view_single', ViewSingleHandler),
     ('/view', ViewAllHandler),
+    ('/image', ViewImageHandler),
     ('/search', SearchHandler),
     ('/trending', TrendingHandler),
     ('/error', ErrorHandler),

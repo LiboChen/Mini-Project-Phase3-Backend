@@ -10,6 +10,12 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: Image
+  ancestor: yes
+  properties:
+  - name: upload_date
+    direction: desc
+
 - kind: Stream
   ancestor: yes
   properties:

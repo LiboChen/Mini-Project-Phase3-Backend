@@ -1,4 +1,4 @@
-application: miniprojectphase1-1083
+application: lyrical-ward-109319
 version: 1
 runtime: python27
 api_version: 1
@@ -9,6 +9,15 @@ handlers:
   static_files: favicon.ico
   upload: favicon\.ico
 
+- url: /img
+  static_dir: img
+
+- url: /css
+  static_dir: css
+
+- url: /js
+  static_dir: js
+
 - url: .*
   script: main.app
 
@@ -17,3 +26,5 @@ libraries:
   version: "2.5.2"
 - name: jinja2
   version: latest
+#- name: PIL
+#  version: version: 1.1.7

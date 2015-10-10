@@ -4,12 +4,14 @@ __author__ = 'libochen'
 from google.appengine.ext import ndb
 from google.appengine.api import images
 from google.appengine.ext import blobstore
+from google.appengine.ext import db
 
 
-class Image(ndb.Model):
-    owner_id = ndb.StringProperty()
-    blob_key = ndb.BlobKeyProperty()
-    stream_id = ndb.StringProperty()
+class Image(db.Model):
+    owner_id = db.StringProperty()
+    image = db.BlobProperty()
+    stream_id = db.StringProperty()
+    upload_date = db.DateTimeProperty(auto_now_add=True)
 
 
 class Stream(ndb.Model):
@@ -22,12 +24,13 @@ class Stream(ndb.Model):
     cover_url = ndb.StringProperty()
     subscribers = ndb.StringProperty(repeated=True)
     tags = ndb.StringProperty()
-    blob_key = ndb.BlobKeyProperty(repeated=True)
     view_queue = ndb.DateTimeProperty(repeated=True)
 
     @classmethod
     def query_stream(cls, ancestor_key):
         return cls.query(ancestor=ancestor_key).order(-cls.last_add)
+
+
 
 
 class StreamInfo(ndb.Model):
