@@ -17,6 +17,7 @@ class Image(db.Model):
 
 
 class Stream(ndb.Model):
+    # image_list = ndb.StringProperty(repeated=True)
     owner = ndb.StringProperty()       #used to solve can't see others problem
     stream_id = ndb.StringProperty()
     user_id = ndb.StringProperty()
@@ -27,8 +28,12 @@ class Stream(ndb.Model):
     subscribers = ndb.StringProperty(repeated=True)
     tags = ndb.StringProperty()
     view_queue = ndb.DateTimeProperty(repeated=True)
-
     mylock = threading.Lock()
+    count = 0
+    # def initialize(self, count):
+    #     self.count = count
+    def set_count(self):
+        self.count = 0
 
     @classmethod
     def query_stream(cls, ancestor_key):
@@ -36,17 +41,25 @@ class Stream(ndb.Model):
 
     @classmethod
     def insert_with_lock(cls, stream_id, image):
+
         cls.mylock.acquire()
+        print "*******" + str(cls.count) + "*******";
         stream_query = Stream.query(Stream.stream_id == stream_id)
         stream = stream_query.fetch()[0]
-        stream.num_images += 1
+        # stream.num_images += 1
+        # print "current image numbers: " + str(stream.num_images)
         user_image = Image(parent=db.Key.from_path('Stream', stream_id))
+        # stream.image_list.append('0')
         image = images.resize(image, 320, 400)
         user_image.image = db.Blob(image)
         stream.last_add = str(datetime.now())
         user_image.put()
+        if stream.num_images == 0:
+            cls.count = 1
+        cls.count += 1
+        print "entercount numebr is ", cls.count
+        stream.num_images = cls.count
         stream.put()
-
         cls.mylock.release()
 
 

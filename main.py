@@ -24,6 +24,7 @@ from data_class import Stream, StreamInfo, ShowStream, Image
 from datetime import datetime
 from google.appengine.api import users
 from google.appengine.api import images
+
 from google.appengine.api import mail
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
@@ -31,13 +32,15 @@ from google.appengine.ext import db
 import jinja2
 from collections import OrderedDict
 
+import threading
+
 REPORT_RATE_MINUTES = "0"
 LAST_REPORT = None
 INDEX = 0
 INDEX1 = 2
 
-# SERVICES_URL = 'http://localhost:8080/'
-SERVICES_URL = 'http://lyrical-ward-109319.appspot.com/'
+SERVICES_URL = 'http://localhost:8080/'
+#SERVICES_URL = 'http://lyrical-ward-109319.appspot.com/'
 
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader('templates'),
@@ -100,7 +103,7 @@ class UploadImageHandler(webapp2.RequestHandler):
         results = []
         if len(pictures) > 0:
             stream_id = self.request.get('stream_id')
-            print "stream name is ", stream_id
+            # print "stream name is ", stream_id
 
             for image in pictures:
                 Stream.insert_with_lock(stream_id, image)
@@ -108,7 +111,7 @@ class UploadImageHandler(webapp2.RequestHandler):
 
         s = json.dumps({'files': results}, separators=(',', ':'))
         self.response.headers['Content-Type'] = 'application/json'
-        print "duming material is ", s
+        # print "duming material is ", s
         return self.response.write(s)
 
 
@@ -376,6 +379,7 @@ class ViewMoreHandler(webapp2.RequestHandler):
         image_query = db.GqlQuery("SELECT *FROM Image WHERE ANCESTOR IS :1 ORDER BY upload_date DESC",
                                   db.Key.from_path('Stream', stream.stream_id))
 
+        # for image in image_query[0: len(stream.image_list)]:
         for image in image_query[0: stream.num_images]:
             s = "image?image_id=" + str(image.key())
             image_url.append(s)
@@ -532,9 +536,11 @@ class CreateANewStreamHandler(webapp2.RequestHandler):
                             views=0,
                             num_images=0,
                             last_add=str(datetime.now()),
-                            owner=data['owner']
+                            owner=data['owner'],
                             )
 
+        new_stream.set_count()
+        print "########", new_stream.count
         new_stream.put()
         result = json.dumps({'status': '0'})
         self.response.write(result)
