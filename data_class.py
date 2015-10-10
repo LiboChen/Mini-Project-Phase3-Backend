@@ -5,6 +5,8 @@ from google.appengine.ext import ndb
 from google.appengine.api import images
 from google.appengine.ext import blobstore
 from google.appengine.ext import db
+import threading
+from datetime import datetime
 
 
 class Image(db.Model):
@@ -26,11 +28,26 @@ class Stream(ndb.Model):
     tags = ndb.StringProperty()
     view_queue = ndb.DateTimeProperty(repeated=True)
 
+    mylock = threading.Lock()
+
     @classmethod
     def query_stream(cls, ancestor_key):
         return cls.query(ancestor=ancestor_key).order(-cls.last_add)
 
+    @classmethod
+    def insert_with_lock(cls, stream_id, image):
+        cls.mylock.acquire()
+        stream_query = Stream.query(Stream.stream_id == stream_id)
+        stream = stream_query.fetch()[0]
+        stream.num_images += 1
+        user_image = Image(parent=db.Key.from_path('Stream', stream_id))
+        image = images.resize(image, 320, 400)
+        user_image.image = db.Blob(image)
+        stream.last_add = str(datetime.now())
+        user_image.put()
+        stream.put()
 
+        cls.mylock.release()
 
 
 class StreamInfo(ndb.Model):
