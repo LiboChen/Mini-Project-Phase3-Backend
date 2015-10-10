@@ -29,11 +29,9 @@ class Stream(ndb.Model):
     tags = ndb.StringProperty()
     view_queue = ndb.DateTimeProperty(repeated=True)
     mylock = threading.Lock()
-    count = 0
+    count = {}
     # def initialize(self, count):
     #     self.count = count
-    def set_count(self):
-        self.count = 0
 
     @classmethod
     def query_stream(cls, ancestor_key):
@@ -41,7 +39,6 @@ class Stream(ndb.Model):
 
     @classmethod
     def insert_with_lock(cls, stream_id, image):
-
         cls.mylock.acquire()
         print "*******" + str(cls.count) + "*******";
         stream_query = Stream.query(Stream.stream_id == stream_id)
@@ -54,11 +51,12 @@ class Stream(ndb.Model):
         user_image.image = db.Blob(image)
         stream.last_add = str(datetime.now())
         user_image.put()
-        if stream.num_images == 0:
-            cls.count = 1
-        cls.count += 1
-        print "entercount numebr is ", cls.count
-        stream.num_images = cls.count
+        if stream_id not in cls.count:
+            cls.count[stream_id] = 0
+
+        cls.count[stream_id] += 1
+        print "entercount numebr is ", cls.count[stream_id]
+        stream.num_images = cls.count[stream_id]
         stream.put()
         cls.mylock.release()
 

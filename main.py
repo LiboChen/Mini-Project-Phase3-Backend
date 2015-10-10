@@ -539,8 +539,6 @@ class CreateANewStreamHandler(webapp2.RequestHandler):
                             owner=data['owner'],
                             )
 
-        new_stream.set_count()
-        print "########", new_stream.count
         new_stream.put()
         result = json.dumps({'status': '0'})
         self.response.write(result)
