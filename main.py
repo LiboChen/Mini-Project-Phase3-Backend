@@ -20,6 +20,8 @@ import webapp2
 import json
 import urllib
 import re
+import logging
+
 from data_class import Stream, StreamInfo, ShowStream, Image
 from datetime import datetime
 from google.appengine.api import users
@@ -40,8 +42,10 @@ INDEX = 0
 INDEX1 = 2
 
 SERVICES_URL = 'http://localhost:8080/'
-#SERVICES_URL = 'http://lyrical-ward-109319.appspot.com/'
+#SERVICES_URL = 'http://apt-mini-project-phase2.appspot.com/'
 
+
+default_preface = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3DFxGhXSmn0MHjbEEtw-0N9sDKhyIP7tM_r3Wo1mY7WhY2xvZ"
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader('templates'),
     extensions=['jinja2.ext.autoescape'],
@@ -328,11 +332,108 @@ class ViewSingleHandler(webapp2.RequestHandler):
             self.redirect('/manage')
 
 
+class ViewStreamHandler(webapp2.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        stream_id = self.request.get('stream_id')
+        print 'stream id is', stream_id
+        info = {'stream_id': self.request.get('stream_id')}
+        info = urllib.urlencode(info)
+
+#       we should use the actual user
+        user_streams = Stream.query(Stream.stream_id == stream_id).fetch()
+        image_url = [""]*3
+        hidden_image = []
+
+        stream = user_streams[0]
+        owner = stream.owner
+        print 'stream id is', stream.stream_id
+        if owner != str(user):
+            stream.views += 1
+            while len(stream.view_queue) > 0 and (datetime.now() - stream.view_queue[0]).seconds > 3600:
+                del stream.view_queue[0]
+            stream.view_queue.append(datetime.now())
+            stream.put()
+
+        #get first three pictures
+        counter = 0
+        has_image = True
+        has_hidden = len(hidden_image)>0
+        image_query = db.GqlQuery("SELECT *FROM Image WHERE ANCESTOR IS :1 ORDER BY upload_date DESC",
+                                  db.Key.from_path('Stream', stream.stream_id))
+
+        logging.debug("type of gqlquery is %s", type(image_query))
+        for image in image_query[0:stream.num_images]:
+            d = dict()
+            d["url"] = "image?image_id=" + str(image.key())
+            d["lat"] = str(image.geo_loc.lat)
+            d["long"] = str(image.geo_loc.lon)
+            d["time"] = str(image.upload_date)
+            if counter < 3:
+                image_url[counter] = d
+            else:
+                hidden_image.append(d)
+            counter += 1
+
+        #calculate hasSub
+        qry = StreamInfo.query_stream(ndb.Key('User', str(user))).fetch()
+        has_sub = False
+        if len(qry) == 0:
+            has_sub = False
+        else:
+            for key in qry[0].subscribed:
+                if key.get().stream_id == stream_id:
+                    has_sub = True
+                    break
+        upload_url = ''
+        template_values = {
+            'nav_links': USER_NAV_LINKS,
+            'path': os.path.basename(self.request.path).capitalize(),
+            'owner': owner,         #the owner of the stream
+            'user': str(users.get_current_user()),   #current user
+            'upload_url': upload_url,
+            'image_url': image_url,
+            'hidden_image':hidden_image,
+            'has_image': has_image,
+            'hasSub': has_sub,
+            'stream_id': stream_id,
+            'has_hidden':has_hidden
+        }
+
+        print "owner is ", template_values['owner']
+        print "user is ", template_values['user']
+        template = JINJA_ENVIRONMENT.get_template('viewstream.html')
+        self.response.write(template.render(template_values))
+
+    def post(self):
+        form = {'user': str(users.get_current_user()),}
+        if self.request.get('Subscribe') == 'Subscribe':
+            form['stream_id'] = self.request.get('stream_id')
+            form_data = json.dumps(form)
+            result = urlfetch.fetch(payload=form_data, url=SERVICES_URL + 'subscribe_a_stream',
+                               method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+        elif self.request.get('Subscribe') == 'Unsubscribe':
+            form['stream_id'] = self.request.get_all('stream_id')
+            form_data = json.dumps(form)
+            result = urlfetch.fetch(payload=form_data, url=SERVICES_URL + 'unsubscribe_a_stream',
+                                    method=urlfetch.POST, headers={'Content-Type': 'application/json'})
+
+        if self.request.get('more'):
+            info = {'stream_id': self.request.get('stream_id')}
+            info = urllib.urlencode(info)
+            self.redirect('/view_more?'+info)
+        else:
+            self.redirect('/manage')
+
 class ViewImageHandler(webapp2.RequestHandler):
     def get(self):
         img = db.get(self.request.get('image_id'))
         self.response.out.write(img.image)
-
+# get the whole image object
+class ViewImageObjectHandler(webapp2.RequestHandler):
+    def get(self):
+        img = db.get(self.request.get('image_id'))
+        self.response.out.write(img)
 
 class ViewAllHandler(webapp2.RequestHandler):
     def get(self):
@@ -343,7 +444,7 @@ class ViewAllHandler(webapp2.RequestHandler):
             if stream.cover_url:
                 image_url.append([stream.cover_url, stream.stream_id])
             else:
-                image_url.append(["https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3DFxGhXSmn0MHjbEEtw-0N9sDKhyIP7tM_r3Wo1mY7WhY2xvZ", stream.stream_id])
+                image_url.append([default_preface, stream.stream_id])
 
         template_values = {
             'nav_links': USER_NAV_LINKS,
@@ -355,6 +456,19 @@ class ViewAllHandler(webapp2.RequestHandler):
         template = JINJA_ENVIRONMENT.get_template('viewall.html')
         self.response.write(template.render(template_values))
 
+class GeoMapHandler(webapp2.RequestHandler):
+    def get(self):
+        streams = Stream.query(Stream.stream_id != '').fetch()
+        image_info = []
+        for stream in streams:
+            image_info.append([stream.cover_url, stream.stream_id])
+        template_values = {
+            'nav_links': USER_NAV_LINKS,
+            'path': os.path.basename(self.request.path).capitalize(),
+        }
+
+        template = JINJA_ENVIRONMENT.get_template('geomap.html')
+        self.response.write(template.render(template_values))
 
 class ViewMoreHandler(webapp2.RequestHandler):
     def get(self):
@@ -380,9 +494,12 @@ class ViewMoreHandler(webapp2.RequestHandler):
                                   db.Key.from_path('Stream', stream.stream_id))
 
         # for image in image_query[0: len(stream.image_list)]:
-        for image in image_query[0: stream.num_images]:
-            s = "image?image_id=" + str(image.key())
-            image_url.append(s)
+        for image in image_query[0:stream.num_images]:
+            d = dict()
+            d["url"] = "image?image_id=" + str(image.key())
+            d["lat"] = str(image.geo_loc.lat)
+            d["long"] = str(image.geo_loc.lon)
+            image_url.append(d)
 
         #calculate hasSub
         qry = StreamInfo.query_stream(ndb.Key('User', str(user))).fetch()
@@ -409,7 +526,7 @@ class ViewMoreHandler(webapp2.RequestHandler):
 
         print "owner is ", template_values['owner']
         print "user is ", template_values['user']
-        template = JINJA_ENVIRONMENT.get_template('viewmore.html')
+        template = JINJA_ENVIRONMENT.get_template('viewMoreWithMap.html')
         self.response.write(template.render(template_values))
 
 
@@ -658,17 +775,6 @@ class ReportHandler(webapp2.RequestHandler):
         return
 
 
-class GeoMapHandler(webapp2.RequestHandler):
-    def get(self):
-        template_values = {
-            'nav_links': USER_NAV_LINKS,
-            'path': os.path.basename(self.request.path).capitalize(),
-        }
-
-        template = JINJA_ENVIRONMENT.get_template('geomap.html')
-        self.response.write(template.render(template_values))
-
-
 class AutoCompleteHandler(webapp2.RequestHandler):
     def get(self):
         pattern = self.request.get("term")
@@ -696,9 +802,11 @@ app = webapp2.WSGIApplication([
     ('/login', LoginHandler),
     ('/manage', ManageHandler),
     ('/create', CreateHandler),
-    ('/view_single', ViewSingleHandler),
+    # ('/view_single', ViewSingleHandler),
+    ('/view_single', ViewStreamHandler),
     ('/view', ViewAllHandler),
     ('/image', ViewImageHandler),
+    ('/imageGeo', ViewImageObjectHandler),
     ('/search', SearchHandler),
     ('/trending', TrendingHandler),
     ('/error', ErrorHandler),

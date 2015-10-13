@@ -7,6 +7,7 @@ from google.appengine.ext import blobstore
 from google.appengine.ext import db
 import threading
 from datetime import datetime
+from random import randrange
 
 
 class Image(db.Model):
@@ -14,7 +15,7 @@ class Image(db.Model):
     image = db.BlobProperty()
     stream_id = db.StringProperty()
     upload_date = db.DateTimeProperty(auto_now_add=True)
-
+    geo_loc = db.GeoPtProperty()
 
 class Stream(ndb.Model):
     # image_list = ndb.StringProperty(repeated=True)
@@ -49,6 +50,8 @@ class Stream(ndb.Model):
         # stream.image_list.append('0')
         image = images.resize(image, 320, 400)
         user_image.image = db.Blob(image)
+        # get random geoPoint
+        user_image.geo_loc = db.GeoPt(randrange(-90,90),randrange(-180,180))
         stream.last_add = str(datetime.now())
         user_image.put()
         if stream_id not in cls.count:

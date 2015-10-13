@@ -35,14 +35,6 @@ function initialize() {
             addMarker(lat,long,url);
         {% endif %}
     {% endfor %}
-     {% for image in hidden_image %}
-        {% if image != "" %}
-            var lat = "{{ image["lat"]}}"
-            var long = "{{ image["long"]}}"
-            var url = "{{ image["url"] }}"
-            addMarker(lat,long,url);
-        {% endif %}
-    {% endfor %}
 }
 
 
@@ -70,39 +62,22 @@ google.maps.event.addDomListener(window, 'load', initialize);
 <input type="hidden" name="stream_id" value="{{ stream_id}}">
 
 {% if has_image %}
-<div class="container" >
+<div class="container">
     <!--Display-->
     <div class="row">
         {% for url in image_url %}
-        <div class="col-sm-4 col-xs-6">
+        <div class="col-sm-3 col-xs-6">
             {% if url != "" %}
                 <a href="#">
                     <img src="{{url["url"]}}" class="img-thumbnail">
-                    {{ url["time"] }}
                 </a>
             {% endif %}
         </div>
         {% endfor %}
+    <div class="col-sm-3 col-xs-6">
 
-    </div>
-</div>
-{% endif %}
 
-{% if has_image %}
-<div class="container" id = "image_secondrow">
-    <!--Display-->
-    <div class="row">
-        {% for url in hidden_image %}
-        <div class="col-sm-4 col-xs-6">
-            {% if url != "" %}
-                <a href="#">
-                    <img src="{{url["url"]}}" class="img-thumbnail">
-                    {{ url["time"] }}
-                </a>
-            {% endif %}
         </div>
-        {% endfor %}
-
     </div>
 </div>
 {% endif %}
@@ -120,7 +95,7 @@ google.maps.event.addDomListener(window, 'load', initialize);
 
     <form id="fileupload" action="upload_image" method="post" enctype="multipart/form-data">
     <!-- The fileupload-buttonbar contains buttons to add/delete files and start/cancel the upload -->
-    <div class="row fileupload-buttonbar" id = "btnRow">
+    <div class="row fileupload-buttonbar">
         <div class="col-lg-7">
             <!-- The fileinput-button span is used to style the file input field as button -->
             <span class="btn btn-success fileinput-button">
@@ -136,10 +111,6 @@ google.maps.event.addDomListener(window, 'load', initialize);
                 <i class="glyphicon glyphicon-ban-circle"></i>
                 <span>Cancel upload</span>
             </button>
-
-            <a href="#image_secondrow" class="btn btn-info" data-toggle="collapse">
-                <i class="glyphicon glyphicon-eye-open"></i>
-                View More</a>
             <!-- The global file processing state -->
             <span class="fileupload-process"></span>
         </div>
@@ -153,6 +124,7 @@ google.maps.event.addDomListener(window, 'load', initialize);
             <div class="progress-extended">&nbsp;</div>
         </div>
     </div>
+
     <!-- The table listing the files available for upload/download -->
     <table role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
 
