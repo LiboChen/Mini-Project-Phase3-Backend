@@ -363,12 +363,20 @@ class ViewStreamHandler(webapp2.RequestHandler):
                                   db.Key.from_path('Stream', stream.stream_id))
 
         logging.debug("type of gqlquery is %s", type(image_query))
+        maxdate = None
+        mindate = None
         for image in image_query[0:stream.num_images]:
             d = dict()
             d["url"] = "image?image_id=" + str(image.key())
             d["lat"] = str(image.geo_loc.lat)
             d["long"] = str(image.geo_loc.lon)
-            d["time"] = str(image.upload_date)
+            date = str.split(str(image.upload_date))
+            dateint = int(date[0].replace("-",""))
+            d["time"] = dateint
+            if maxdate == None or dateint > maxdate:
+                maxdate = dateint
+            if mindate==None or dateint < mindate:
+                mindate = dateint
             if counter < 3:
                 image_url[counter] = d
             else:
@@ -397,7 +405,9 @@ class ViewStreamHandler(webapp2.RequestHandler):
             'has_image': has_image,
             'hasSub': has_sub,
             'stream_id': stream_id,
-            'has_hidden':has_hidden
+            'has_hidden':has_hidden,
+            'maxdate':maxdate,
+            'mindate':mindate
         }
 
         print "owner is ", template_values['owner']

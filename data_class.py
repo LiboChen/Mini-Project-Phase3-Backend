@@ -51,7 +51,7 @@ class Stream(ndb.Model):
         image = images.resize(image, 320, 400)
         user_image.image = db.Blob(image)
         # get random geoPoint
-        user_image.geo_loc = db.GeoPt(randrange(-90,90),randrange(-180,180))
+        user_image.geo_loc = db.GeoPt(randrange(-10,10),randrange(-10,10))
         stream.last_add = str(datetime.now())
         user_image.put()
         if stream_id not in cls.count:
