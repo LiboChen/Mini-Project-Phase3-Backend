@@ -41,8 +41,8 @@ LAST_REPORT = None
 INDEX = 0
 INDEX1 = 2
 
-SERVICES_URL = 'http://localhost:8080/'
-#SERVICES_URL = 'http://apt-mini-project-phase2.appspot.com/'
+#SERVICES_URL = 'http://localhost:8080/'
+SERVICES_URL = 'http://apt-mini-project-phase2.appspot.com/'
 
 
 default_preface = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3DFxGhXSmn0MHjbEEtw-0N9sDKhyIP7tM_r3Wo1mY7WhY2xvZ"
@@ -52,7 +52,7 @@ JINJA_ENVIRONMENT = jinja2.Environment(
     autoescape=True)
 
 
-NAV_LINKS = sorted(('Create', 'View', 'Search', 'Trending', 'Manage', 'geoMap'))
+NAV_LINKS = sorted(('Create', 'View', 'Search', 'Trending', 'Manage'))
 NAV_LINKS = OrderedDict(zip(NAV_LINKS, map(lambda x: '/'+x.lower(), NAV_LINKS) ))
 USER_NAV_LINKS = NAV_LINKS.copy()
 

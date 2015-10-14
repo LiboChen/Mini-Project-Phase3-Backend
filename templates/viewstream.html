@@ -12,6 +12,7 @@
 <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
 <link rel="stylesheet" href="css/jquery.fileupload.css">
 <link rel="stylesheet" href="css/jquery.fileupload-ui.css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <!-- CSS adjustments for browsers with JavaScript disabled -->
 <noscript><link rel="stylesheet" href="css/jquery.fileupload-noscript.css"></noscript>
 <noscript><link rel="stylesheet" href="css/jquery.fileupload-ui-noscript.css"></noscript>
@@ -26,11 +27,17 @@
   var markers = [];
   var markerClusterer;
   $(function() {
+      var min = {{ mindate }}
+      var max = {{ maxdate }}
+      if (min == null)
+        min = 20150000
+      if (max == null)
+        max = 20151200
     $( "#slider-range" ).slider({
       range: true,
-      min: {{ mindate-5 }},
-      max: {{ maxdate+5 }},
-      values: [ {{ mindate-5 }}, {{ maxdate+5 }} ],
+      min: min-5,
+      max: max+5,
+      values: [ min-5, max+5 ],
       slide: function( event, ui ) {
         $( "#amount" ).val(  ui.values[ 0 ] + " - " + ui.values[ 1 ] );
           max_date = Number(ui.values[1])
@@ -128,7 +135,7 @@ google.maps.event.addDomListener(window, 'load', initialize);
             {% if url != "" %}
                 <a href="#">
                     <img src="{{url["url"]}}" class="img-thumbnail">
-                    {{ url["time"] }}
+
                 </a>
             {% endif %}
         </div>
@@ -147,7 +154,7 @@ google.maps.event.addDomListener(window, 'load', initialize);
             {% if url != "" %}
                 <a href="#">
                     <img src="{{url["url"]}}" class="img-thumbnail">
-                    {{ url["time"] }}
+
                 </a>
             {% endif %}
         </div>
@@ -300,15 +307,55 @@ google.maps.event.addDomListener(window, 'load', initialize);
 
 
 {% elif hasSub %}
-    <form action="/view_single?stream_id={{ stream_id }}" method="post">
-    <input type="submit" name="Subscribe" value="Unsubscribe">
-    </form>
-{% else %}
-    <form action="/view_single?stream_id={{ stream_id }}" method="post">
-    <input type="submit" name="Subscribe" value="Subscribe">
-    </form>
-{% endif %}
+    <div class="row fileupload-buttonbar" id = "btnRow">
+        <div class="col-lg-7">
+            <!-- The fileinput-button span is used to style the file input field as button -->
+            <form action="/view_single?stream_id={{ stream_id }}" method="post">
+                <button class ="btn btn-success" name="Subscribe" type="submit" value="Unsubscribe">
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    Unsubscribe
+                </button>
+{#            <span class="btn btn-success fileinput-button">#}
+{#                <i class="glyphicon glyphicon-plus"></i>#}
+{#                <span>Subscribe</span>#}
+{#                <input type="submit" name="files[]" multiple>#}
+{#            </span>#}
+{#            <button type="submit" class="btn btn-primary start">#}
+{#                <i class="glyphicon glyphicon-upload"></i>#}
+{#                <span>Start upload</span>#}
+{#            </button>#}
+{#            <button type="reset" class="btn btn-warning cancel">#}
+{#                <i class="glyphicon glyphicon-ban-circle"></i>#}
+{#                <span>Cancel upload</span>#}
+{#            </button>#}
+            <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#image_secondrow">
+                <i class="glyphicon glyphicon-eye-open"></i>
+                <span>View More</span>
+            </button>
+            </form>
+        </div>
+    </div>
 
+{#    <form action="/view_single?stream_id={{ stream_id }}" method="post">#}
+{#    <input type="submit" name="Subscribe" value="Unsubscribe">#}
+{#    </form>#}
+{% else %}
+    <div class="row fileupload-buttonbar" id = "btnRow">
+        <div class="col-lg-7">
+            <!-- The fileinput-button span is used to style the file input field as button -->
+            <form action="/view_single?stream_id={{ stream_id }}" method="post">
+                <button class ="btn btn-success" name="Subscribe" type="submit" value="Subscribe">
+                    <i class="glyphicon glyphicon-plus"></i>
+                    Subscribe
+                </button>
+            <button type="button" class="btn btn-info" data-toggle="collapse" data-target="#image_secondrow">
+                <i class="glyphicon glyphicon-eye-open"></i>
+                <span>View More</span>
+            </button>
+            </form>
+        </div>
+    </div>
+{% endif %}
 
 
 <!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
