@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Bootstrap styles -->
 <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <script src="../js/markerClusterer.js"></script>
 <!-- blueimp Gallery styles -->
 <link rel="stylesheet" href="//blueimp.github.io/Gallery/css/blueimp-gallery.min.css">
 <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
@@ -23,6 +24,7 @@
   var max_date = Number(99999999);
   var min_date = Number(0);
   var markers = [];
+  var markerClusterer;
   $(function() {
     $( "#slider-range" ).slider({
       range: true,
@@ -58,14 +60,14 @@ function initialize() {
     mapTypeId:google.maps.MapTypeId.ROADMAP
   };
     map=new google.maps.Map(document.getElementById("googleMap"),mapProp);
-    refreshMarker()
+    markerClusterer = new MarkerClusterer(map);
+    refreshMarker();
 
 }
 
     function refreshMarker(){
-        for(i=0; i<markers.length; i++){
-        markers[i].setMap(null);
-    }
+        markers = [];
+        markerClusterer.clearMarkers();
         {% for image in image_url %}
         {% if image != "" %}
             var lat = "{{ image["lat"]}}"
@@ -84,6 +86,10 @@ function initialize() {
             addMarker(lat,long,url,date);
         {% endif %}
     {% endfor %}
+        var options = {
+      'zoom': 13,
+    };
+        markerClusterer.addMarkers(markers);
     }
 
 
@@ -93,7 +99,6 @@ function addMarker(lat,long,url,date) {
     position:myCenter,
   });
     if(date >= min_date && date <= max_date){
-        marker.setMap(map);
         markers.push(marker);
     }
     else
