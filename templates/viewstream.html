@@ -12,7 +12,6 @@
 <!-- CSS to style the file input field as button and adjust the Bootstrap progress bars -->
 <link rel="stylesheet" href="css/jquery.fileupload.css">
 <link rel="stylesheet" href="css/jquery.fileupload-ui.css">
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <!-- CSS adjustments for browsers with JavaScript disabled -->
 <noscript><link rel="stylesheet" href="css/jquery.fileupload-noscript.css"></noscript>
 <noscript><link rel="stylesheet" href="css/jquery.fileupload-ui-noscript.css"></noscript>
@@ -357,7 +356,7 @@ google.maps.event.addDomListener(window, 'load', initialize);
     </div>
 {% endif %}
 
-
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
 <script src="js/vendor/jquery.ui.widget.js"></script>
 <!-- The Templates plugin is included to render the upload/download listings -->
@@ -388,6 +387,7 @@ google.maps.event.addDomListener(window, 'load', initialize);
 <script src="js/jquery.fileupload-ui.js"></script>
 <!-- The main application script -->
 <script src="js/main.js"></script>
+
 <!-- The XDomainRequest Transport is included for cross-domain file deletion for IE 8 and IE 9 -->
 <!--[if (gte IE 8)&(lt IE 10)]>
 <script src="js/cors/jquery.xdr-transport.js"></script>
