@@ -39,7 +39,7 @@ class Stream(ndb.Model):
         return cls.query(ancestor=ancestor_key).order(-cls.last_add)
 
     @classmethod
-    def insert_with_lock(cls, stream_id, image):
+    def insert_with_lock(cls, stream_id, image,random=True,lat=None,lon=None):
         cls.mylock.acquire()
         print "*******" + str(cls.count) + "*******";
         stream_query = Stream.query(Stream.stream_id == stream_id)
@@ -51,7 +51,10 @@ class Stream(ndb.Model):
         image = images.resize(image, 320, 400)
         user_image.image = db.Blob(image)
         # get random geoPoint
-        user_image.geo_loc = db.GeoPt(randrange(-10,10),randrange(-10,10))
+        if random:
+            user_image.geo_loc = db.GeoPt(randrange(-10,10),randrange(-10,10))
+        else:
+            user_image.geo_loc = db.GeoPt(lat,lon)
         stream.last_add = str(datetime.now())
         user_image.put()
 

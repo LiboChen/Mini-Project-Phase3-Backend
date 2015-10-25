@@ -879,10 +879,12 @@ class AndroidUploadImageHandler(webapp2.RequestHandler):
         results = []
         if len(pictures) > 0:
             stream_id = self.request.get('stream_id')
+            lon = float(self.request.get('longitude'))
+            lat = float(self.request.get('latitude'))
             # print "stream name is ", stream_id
 
             for image in pictures:
-                Stream.insert_with_lock(stream_id, image)
+                Stream.insert_with_lock(stream_id, image,True,lat,lon)
         #         results.append({'name': '', 'url': '', 'type': '', 'size': 0})
         #
         # s = json.dumps({'files': results}, separators=(',', ':'))
