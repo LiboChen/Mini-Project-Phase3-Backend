@@ -13,8 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-#1009
+
 import os
 import webapp2
 import json
@@ -42,7 +41,7 @@ INDEX = 0
 INDEX1 = 2
 
 #SERVICES_URL = 'http://localhost:8080/'
-SERVICES_URL = 'http://apt-mini-project-phase2.appspot.com/'
+SERVICES_URL = 'http://apt-phase3.appspot.com/'
 
 
 default_preface = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3DFxGhXSmn0MHjbEEtw-0N9sDKhyIP7tM_r3Wo1mY7WhY2xvZ"
@@ -145,7 +144,7 @@ class MainPage(webapp2.RequestHandler):
 
 class LoginHandler(webapp2.RequestHandler):
     def get(self):
-        user = users.get_current_user()
+        user = str(users.get_current_user()).lower()
         if user:
             self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
             self.response.write('Hello, ' + user.nickname())
@@ -156,7 +155,7 @@ class LoginHandler(webapp2.RequestHandler):
 
 class ManageHandler(webapp2.RequestHandler):
     def get(self):
-        user = users.get_current_user()
+        user = str(users.get_current_user()).lower()
         print 'user is ', user
         subscribed_streams = []
         qry = StreamInfo.query_stream(ndb.Key('User', str(user))).fetch()
@@ -168,7 +167,7 @@ class ManageHandler(webapp2.RequestHandler):
         template_values = {
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
-            'user_id': users.get_current_user(),
+            'user_id': str(users.get_current_user()).lower(),
             'user_streams': Stream.query(Stream.owner == str(user)).fetch(),
             'subscribed_streams': subscribed_streams,
             'usr': user,
@@ -187,7 +186,7 @@ class ManageHandler(webapp2.RequestHandler):
 
     def post(self):
         form = {'stream_id': self.request.get_all('stream_id'),
-                'user': str(users.get_current_user()),
+                'user': str(users.get_current_user()).lower(),
                 }
 
 
@@ -214,7 +213,7 @@ class CreateHandler(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
     def post(self):
-        user = users.get_current_user()
+        user = str(users.get_current_user()).lower()
         stream_id = self.request.get('stream_id')
         print 'first', stream_id
         streams = Stream.query(Stream.stream_id != '').fetch()
@@ -233,11 +232,11 @@ class CreateHandler(webapp2.RequestHandler):
                            body=self.request.get("message"))
 
         form = {'stream_id': self.request.get('stream_id'),
-                'user_id': str(users.get_current_user()),
+                'user_id': str(users.get_current_user()).lower(),
                 'tags': self.request.get('tags'),
 #               'subscribers': self.request.get('subscribers'),
                 'cover_url': self.request.get('cover_url'),
-                'owner': str(users.get_current_user()),
+                'owner': str(users.get_current_user()).lower(),
                 'views': 0,
                 }
 
@@ -249,7 +248,7 @@ class CreateHandler(webapp2.RequestHandler):
 
 class ViewSingleHandler(webapp2.RequestHandler):
     def get(self):
-        user = users.get_current_user()
+        user = str(users.get_current_user()).lower()
         stream_id = self.request.get('stream_id')
         print 'stream id is', stream_id
         info = {'stream_id': self.request.get('stream_id')}
@@ -298,7 +297,7 @@ class ViewSingleHandler(webapp2.RequestHandler):
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
             'owner': owner,         #the owner of the stream
-            'user': str(users.get_current_user()),   #current user
+            'user': str(users.get_current_user()).lower(),   #current user
             'upload_url': upload_url,
             'image_url': image_url,
             'has_image': has_image,
@@ -312,7 +311,7 @@ class ViewSingleHandler(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
     def post(self):
-        form = {'user': str(users.get_current_user()),}
+        form = {'user': str(users.get_current_user()).lower(),}
         if self.request.get('Subscribe') == 'Subscribe':
             form['stream_id'] = self.request.get('stream_id')
             form_data = json.dumps(form)
@@ -334,7 +333,7 @@ class ViewSingleHandler(webapp2.RequestHandler):
 
 class ViewStreamHandler(webapp2.RequestHandler):
     def get(self):
-        user = users.get_current_user()
+        user = str(users.get_current_user()).lower()
         stream_id = self.request.get('stream_id')
         print 'stream id is', stream_id
         info = {'stream_id': self.request.get('stream_id')}
@@ -398,7 +397,7 @@ class ViewStreamHandler(webapp2.RequestHandler):
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
             'owner': owner,         #the owner of the stream
-            'user': str(users.get_current_user()),   #current user
+            'user': str(users.get_current_user()).lower(),   #current user
             'upload_url': upload_url,
             'image_url': image_url,
             'hidden_image':hidden_image,
@@ -416,7 +415,7 @@ class ViewStreamHandler(webapp2.RequestHandler):
         self.response.write(template.render(template_values))
 
     def post(self):
-        form = {'user': str(users.get_current_user()),}
+        form = {'user': str(users.get_current_user()).lower(),}
         if self.request.get('Subscribe') == 'Subscribe':
             form['stream_id'] = self.request.get('stream_id')
             form_data = json.dumps(form)
@@ -482,7 +481,7 @@ class GeoMapHandler(webapp2.RequestHandler):
 
 class ViewMoreHandler(webapp2.RequestHandler):
     def get(self):
-        user = users.get_current_user()
+        user = str(users.get_current_user()).lower()
         stream_id = self.request.get('stream_id')
         print 'stream id is', stream_id
         info = {'stream_id': self.request.get('stream_id')}
@@ -527,7 +526,7 @@ class ViewMoreHandler(webapp2.RequestHandler):
             'nav_links': USER_NAV_LINKS,
             'path': os.path.basename(self.request.path).capitalize(),
             'owner': owner,         #the owner of the stream
-            'user': str(users.get_current_user()),   #current user
+            'user': str(users.get_current_user()).lower(),   #current user
             'image_url': image_url,
             'has_image': has_image,
             'hasSub': has_sub,
@@ -730,7 +729,7 @@ class UnsubscribeStreamHandler(webapp2.RequestHandler):
 
 class ReportHandler(webapp2.RequestHandler):
     def get(self):
-        print 'in report handler', str(users.get_current_user())
+        print 'in report handler', str(users.get_current_user()).lower()
         print "NOW RATE BECOMES", REPORT_RATE_MINUTES
         if REPORT_RATE_MINUTES == '0':
             return
@@ -807,12 +806,96 @@ class AutoCompleteHandler(webapp2.RequestHandler):
         self.response.write(json.dumps(context))
 
 
+################################ FOR PHASE 3 Android PART #############################
+class AndroidViewAllStreamsHandler(webapp2.RequestHandler):
+    def get(self):
+        streams = Stream.query(Stream.stream_id != '').fetch()
+        print type(streams)
+        stream_url = []
+        stream_ids = []
+        for stream in streams:
+            stream_ids.append(stream.stream_id)
+            if stream.cover_url:
+                stream_url.append(stream.cover_url)
+            else:
+                stream_url.append(default_preface)
+
+        name = self.request.get('user_id')
+        print "adroid user is ", name
+        dict_passed = {'displayImages': stream_url, 'streamId': stream_ids, 'name': name}
+        json_obj = json.dumps(dict_passed, sort_keys=True, indent=4, separators=(',', ': '))
+        self.response.write(json_obj)
+
+
+class AndroidViewStreamHandler(webapp2.RequestHandler):
+    def get(self):
+        user = self.request.get('user_id')
+        stream_id = self.request.get('stream_id')
+        print 'stream id is', stream_id
+#       we should use the actual user
+        user_streams = Stream.query(Stream.stream_id == stream_id).fetch()
+
+        stream = user_streams[0]
+        owner = stream.owner
+        print 'stream id is', stream.stream_id
+        my_own = True
+        if owner != str(user):
+            my_own = False
+            stream.views += 1
+            stream.view_queue.append(datetime.now())
+            stream.put()
+
+        image_url = []
+        image_query = db.GqlQuery("SELECT *FROM Image WHERE ANCESTOR IS :1 ORDER BY upload_date DESC",
+                                  db.Key.from_path('Stream', stream.stream_id))
+
+        # for image in image_query[0: len(stream.image_list)]:
+        for image in image_query[0:stream.num_images]:
+            d = dict()
+            d["url"] = SERVICES_URL +"image?image_id=" + str(image.key())
+            d["lat"] = str(image.geo_loc.lat)
+            d["long"] = str(image.geo_loc.lon)
+            image_url.append(d)
+
+        #calculate hasSub
+        qry = StreamInfo.query_stream(ndb.Key('User', str(user))).fetch()
+        has_sub = False
+        if len(qry) == 0:
+            has_sub = False
+        else:
+            for key in qry[0].subscribed:
+                if key.get().stream_id == stream_id:
+                    has_sub = True
+                    break
+
+        dict_passed = {'displayImages': image_url, 'myOwn': my_own, 'hasSub': has_sub}
+        json_obj = json.dumps(dict_passed, sort_keys=True, indent=4, separators=(',', ': '))
+        self.response.write(json_obj)
+
+
+class AndroidUploadImageHandler(webapp2.RequestHandler):
+    def post(self):
+        pictures = self.request.get_all('files')
+        results = []
+        if len(pictures) > 0:
+            stream_id = self.request.get('stream_id')
+            # print "stream name is ", stream_id
+
+            for image in pictures:
+                Stream.insert_with_lock(stream_id, image)
+        #         results.append({'name': '', 'url': '', 'type': '', 'size': 0})
+        #
+        # s = json.dumps({'files': results}, separators=(',', ':'))
+        # self.response.headers['Content-Type'] = 'application/json'
+        # # print "duming material is ", s
+        # return self.response.write(s)
+
+
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/login', LoginHandler),
     ('/manage', ManageHandler),
     ('/create', CreateHandler),
-    # ('/view_single', ViewSingleHandler),
     ('/view_single', ViewStreamHandler),
     ('/view', ViewAllHandler),
     ('/image', ViewImageHandler),
@@ -829,4 +912,7 @@ app = webapp2.WSGIApplication([
     ('/report', ReportHandler),
     ('/geomap', GeoMapHandler),
     ('/auto_complete', AutoCompleteHandler),
+    ('/android/view_all_streams', AndroidViewAllStreamsHandler),
+    ('/android/view_single_stream', AndroidViewStreamHandler),
+    ('/android/upload_image', AndroidUploadImageHandler),
 ], debug=True)

@@ -54,6 +54,10 @@ class Stream(ndb.Model):
         user_image.geo_loc = db.GeoPt(randrange(-10,10),randrange(-10,10))
         stream.last_add = str(datetime.now())
         user_image.put()
+
+        print "*******************", cls.count
+        print "******************* stream_id is", stream_id
+
         if stream_id not in cls.count:
             cls.count[stream_id] = 0
 
@@ -79,21 +83,3 @@ class ShowStream:
         self.views = views
         self.stream_id = stream_id
 
-
-
-
-'''
-class User(ndb.Model):
-    user_id = ndb.StringProperty()
-    upload_streams = ndb.StringProperty(repeated=True)
-    subscribe_streams = ndb.StringProperty(repeated=True)
-
-    def add_stream(self, new_stream):
-        if new_stream.stream_id in self.upload_streams:
-            return
-        else:
-            self.upload_streams.insert(0, new_stream.stream_id)
-
-        self.put()
-        new_stream.put()
-'''
