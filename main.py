@@ -877,14 +877,20 @@ class AndroidUploadImageHandler(webapp2.RequestHandler):
     def post(self):
         pictures = self.request.get_all('files')
         results = []
+        print "Android_upload called"
         if len(pictures) > 0:
             stream_id = self.request.get('stream_id')
-            lon = float(self.request.get('longitude'))
-            lat = float(self.request.get('latitude'))
-            # print "stream name is ", stream_id
+            print "stream name is ", stream_id
+            str_lon = self.request.get('longitude')
+            str_lat = self.request.get('latitude')
+            print str_lon + " " + str_lat
 
             for image in pictures:
-                Stream.insert_with_lock(stream_id, image,True,lat,lon)
+                if str_lon == "" or str_lat == "":
+                    Stream.insert_with_lock(stream_id,image)
+                else:
+                    Stream.insert_with_lock(stream_id, image,True,float(str_lat),float(str_lon))
+
         #         results.append({'name': '', 'url': '', 'type': '', 'size': 0})
         #
         # s = json.dumps({'files': results}, separators=(',', ':'))
