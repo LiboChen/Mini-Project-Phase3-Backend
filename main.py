@@ -883,6 +883,35 @@ class AndroidViewStreamHandler(webapp2.RequestHandler):
         self.response.write(json_obj)
 
 
+class AndroidViewNearby(webapp2.RequestHandler):
+    def get(self):
+        target_long = self.request.get('longitude')
+        target_lat = self.request.get('latitude')
+        streams = Stream.query(Stream.stream_id != '').fetch()
+        image_url = []
+
+        for stream in streams:
+            image_query = db.GqlQuery("SELECT *FROM Image WHERE ANCESTOR IS :1 ORDER BY upload_date DESC",
+                                      db.Key.from_path('Stream', stream.stream_id))
+
+            for image in image_query[0:stream.num_images]:
+                d = dict()
+                d["url"] = SERVICES_URL + "image?image_id=" + str(image.key())
+                d["stream_id"] = stream.stream_id
+                d["long"] = image.geo_loc.lon
+                d["lat"] = image.geo_loc.lat
+                image_url.append(d)
+
+        mycmp = lambda a, b: ((target_long - a["long"]) * (target_long - a["long"]) +
+                              (target_lat - a["lat"]) * (target_lat - a["lat"]) -
+                              (target_long - b["long"]) * (target_long - b["long"]) -
+                              (target_lat - b["lat"]) * (target_lat - b["lat"]))
+        image_url.sort(mycmp)
+        dict_passed = {'displayImages': image_url}
+        json_obj = json.dumps(dict_passed, sort_keys=True, indent=4, separators=(',', ': '))
+        self.response.write(json_obj)
+
+
 class AndroidUploadImageHandler(webapp2.RequestHandler):
     def post(self):
         pictures = self.request.get_all('files')
@@ -933,4 +962,5 @@ app = webapp2.WSGIApplication([
     ('/android/view_all_streams', AndroidViewAllStreamsHandler),
     ('/android/view_single_stream', AndroidViewStreamHandler),
     ('/android/upload_image', AndroidUploadImageHandler),
+    ('/android/view_nearby', AndroidViewNearby),
 ], debug=True)
