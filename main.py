@@ -672,11 +672,21 @@ class CreateANewStreamHandler(webapp2.RequestHandler):
 
 class DeleteStreamHandler(webapp2.RequestHandler):
     def post(self):
+        print "************delete stream******************"
         data = json.loads(self.request.body)
         user = data['user']
         for stream_id in data['stream_id']:
             qry = Stream.query(Stream.stream_id == stream_id).fetch()
             if len(qry) > 0:
+                #delete all the images in this stream
+                image_query = db.GqlQuery("SELECT *FROM Image WHERE ANCESTOR IS :1 ORDER BY upload_date DESC",
+                                          db.Key.from_path('Stream', stream_id))
+                for image in image_query[0:qry[0].num_images]:
+                    image.delete()
+                    print "******************delete images"
+
+                Stream.reset_image_num(qry[0].stream_id)
+                #delete stream
                 qry[0].key.delete()
 
         self.redirect('/manage')

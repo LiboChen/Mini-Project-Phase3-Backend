@@ -39,6 +39,10 @@ class Stream(ndb.Model):
         return cls.query(ancestor=ancestor_key).order(-cls.last_add)
 
     @classmethod
+    def reset_image_num(cls, stream_id):
+        cls.count[stream_id] = 0
+
+    @classmethod
     def insert_with_lock(cls, stream_id, image,random=True,lat=None,lon=None):
         cls.mylock.acquire()
         print "*******" + str(cls.count) + "*******";
