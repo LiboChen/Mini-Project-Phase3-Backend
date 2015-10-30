@@ -885,8 +885,8 @@ class AndroidViewStreamHandler(webapp2.RequestHandler):
 
 class AndroidViewNearby(webapp2.RequestHandler):
     def get(self):
-        target_long = self.request.get('longitude')
-        target_lat = self.request.get('latitude')
+        target_long = (float)(self.request.get('longitude'))
+        target_lat = (float)(self.request.get('latitude'))
         streams = Stream.query(Stream.stream_id != '').fetch()
         image_url = []
 
@@ -902,7 +902,7 @@ class AndroidViewNearby(webapp2.RequestHandler):
                 d["lat"] = image.geo_loc.lat
                 image_url.append(d)
 
-        mycmp = lambda a, b: ((target_long - a["long"]) * (target_long - a["long"]) +
+        mycmp = lambda a, b: (int)((target_long - a["long"]) * (target_long - a["long"]) +
                               (target_lat - a["lat"]) * (target_lat - a["lat"]) -
                               (target_long - b["long"]) * (target_long - b["long"]) -
                               (target_lat - b["lat"]) * (target_lat - b["lat"]))
@@ -928,7 +928,7 @@ class AndroidUploadImageHandler(webapp2.RequestHandler):
                 if str_lon == "" or str_lat == "":
                     Stream.insert_with_lock(stream_id,image)
                 else:
-                    Stream.insert_with_lock(stream_id, image,True,float(str_lat),float(str_lon))
+                    Stream.insert_with_lock(stream_id, image,False,float(str_lat),float(str_lon))
 
         #         results.append({'name': '', 'url': '', 'type': '', 'size': 0})
         #
